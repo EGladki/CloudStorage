@@ -26,12 +26,13 @@ public class AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder encoder;
-    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+    private final SecurityContextRepository securityContextRepository;
 
-    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder encoder) {
+    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder encoder, SecurityContextRepository securityContextRepository) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.encoder = encoder;
+        this.securityContextRepository = securityContextRepository;
     }
 
     public void authenticate(RegisterRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
