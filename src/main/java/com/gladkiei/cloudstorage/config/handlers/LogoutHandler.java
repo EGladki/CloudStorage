@@ -16,9 +16,9 @@ public class LogoutHandler implements LogoutSuccessHandler {
         response.setContentType("application/json;charset=UTF-8");
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("""
-                    {"message": "User is not authenticated"}
+                    {"message": "Response from unauthorized user"}
                     """);
         } else {
             response.setStatus(HttpServletResponse.SC_OK);

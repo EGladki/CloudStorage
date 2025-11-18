@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable())
                 .logout(logout -> logout
                         .logoutSuccessHandler(logoutHandler())
-                        .logoutUrl("/api/auth/logout")
+                        .logoutUrl("/api/auth/sign-out")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("SESSION")

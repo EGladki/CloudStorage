@@ -9,7 +9,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
@@ -191,7 +193,29 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void givenAuthorizedUser_whenLogout_then200() throws Exception {
+        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
 
+        MockHttpSession session = new MockHttpSession();
+
+        mockMvc.perform(post("/api/auth/sign-up")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/auth/sign-in")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/sign-out")
+                        .session(session))
+                .andExpect(status().isOk());
+
+    }
 
 
 }
