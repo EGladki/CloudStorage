@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors()
                 .forEach(error ->
                         errors.put(error.getField(), error.getDefaultMessage()));
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("message", "Validation failed", "errors", errors));
     }
 
