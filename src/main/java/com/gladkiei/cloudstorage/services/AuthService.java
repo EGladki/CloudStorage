@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
@@ -27,12 +28,15 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder encoder;
     private final SecurityContextRepository securityContextRepository;
+    private final SecurityContextLogoutHandler securityContextLogoutHandler;
 
-    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder encoder, SecurityContextRepository securityContextRepository) {
+
+    public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder encoder, SecurityContextRepository securityContextRepository, SecurityContextLogoutHandler securityContextLogoutHandler) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.encoder = encoder;
         this.securityContextRepository = securityContextRepository;
+        this.securityContextLogoutHandler = securityContextLogoutHandler;
     }
 
     public void authenticate(RegisterRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
@@ -61,6 +65,10 @@ public class AuthService {
         User user = UserMapper.INSTANCE.registerRequesDtoToUser(requestDto);
         user.setPassword(encoder.encode(requestDto.getPassword()));
         return UserMapper.INSTANCE.userToUserResponseDto(userRepository.save(user));
+    }
+
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        securityContextLogoutHandler.logout(request,response, SecurityContextHolder.getContext().getAuthentication());
     }
 
 }

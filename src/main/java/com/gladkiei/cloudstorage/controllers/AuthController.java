@@ -1,4 +1,4 @@
-package com.gladkiei.cloudstorage.controller;
+package com.gladkiei.cloudstorage.controllers;
 
 import com.gladkiei.cloudstorage.dto.RegisterRequestDto;
 import com.gladkiei.cloudstorage.services.AuthService;
@@ -33,6 +33,13 @@ public class AuthController {
     public ResponseEntity<?> processRegistration(@Valid @RequestBody RegisterRequestDto dto) {
         authService.register(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("username", dto.getUsername()));
+    }
+
+    @PostMapping("/sign-out")
+    public HttpStatus logout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logout(request,response);
+
+        return HttpStatus.NO_CONTENT;
     }
 
 
