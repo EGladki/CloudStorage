@@ -38,12 +38,5 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("username", dto.getUsername()));
     }
 
-    @GetMapping("/showUserDetails")
-    public ResponseEntity<?> showUserDetails() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-
-        return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", userDetails.getUser()));
-    }
 
 }

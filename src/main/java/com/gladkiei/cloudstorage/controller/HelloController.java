@@ -17,8 +17,4 @@ public class HelloController {
         return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "Hello"));
     }
 
-//    @GetMapping("/exception")
-//    public CustomException throwException() {
-//        throw new CustomException("Custom exception thrown");
-//    }
 }

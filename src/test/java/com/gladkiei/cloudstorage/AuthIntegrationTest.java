@@ -1,24 +1,18 @@
 package com.gladkiei.cloudstorage;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gladkiei.cloudstorage.dto.RegisterRequestDto;
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-import static net.bytebuddy.matcher.ElementMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -216,8 +210,35 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/auth/sign-out")
                         .cookie(cookie))
                 .andExpect(status().isOk());
-
     }
 
+    @Test
+    void givenAuthorizedUser_whenShowUserDetails_then200() throws Exception {
+        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+
+        mockMvc.perform(post("/api/auth/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated());
+
+        MvcResult result = mockMvc.perform(post("/api/auth/sign-in")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Cookie cookie = result.getResponse().getCookie("SESSION");
+
+        mockMvc.perform(get("/api/user/me")
+                        .cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("name"));
+    }
+
+    @Test
+    void givenUnauthorizedUser_whenShowUserDetails_then401() throws Exception {
+        mockMvc.perform(get("/api/user/me"))
+                .andExpect(status().isUnauthorized());
+    }
 
 }
