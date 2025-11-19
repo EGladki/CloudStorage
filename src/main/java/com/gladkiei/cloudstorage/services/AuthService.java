@@ -9,6 +9,7 @@ import com.gladkiei.cloudstorage.models.User;
 import com.gladkiei.cloudstorage.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,7 +18,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 
@@ -67,8 +67,15 @@ public class AuthService {
         return UserMapper.INSTANCE.userToUserResponseDto(userRepository.save(user));
     }
 
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
-        securityContextLogoutHandler.logout(request,response, SecurityContextHolder.getContext().getAuthentication());
+    public HttpStatus logout(HttpServletRequest request, HttpServletResponse response) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null) {
+            securityContextLogoutHandler.logout(request, response, authentication);
+            return HttpStatus.NO_CONTENT;
+        } else {
+            return HttpStatus.UNAUTHORIZED; //TODO status not correct
+        }
     }
 
 }

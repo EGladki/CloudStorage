@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+import static java.util.Optional.empty;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -36,10 +38,9 @@ public class AuthController {
     }
 
     @PostMapping("/sign-out")
-    public HttpStatus logout(HttpServletRequest request, HttpServletResponse response) {
-        authService.logout(request,response);
-
-        return HttpStatus.NO_CONTENT;
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        HttpStatus status = authService.logout(request, response);
+        return ResponseEntity.status(status).body(empty());
     }
 
 
