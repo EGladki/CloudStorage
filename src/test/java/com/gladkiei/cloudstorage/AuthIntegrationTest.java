@@ -3,6 +3,8 @@ package com.gladkiei.cloudstorage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gladkiei.cloudstorage.dto.RegisterRequestDto;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -12,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
@@ -197,22 +200,21 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
     void givenAuthorizedUser_whenLogout_then200() throws Exception {
         RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
 
-        MockHttpSession session = new MockHttpSession();
-
         mockMvc.perform(post("/api/auth/sign-up")
-                        .session(session)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/auth/sign-in")
-                        .session(session)
+        MvcResult result = mockMvc.perform(post("/api/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Cookie cookie = result.getResponse().getCookie("SESSION");
 
         mockMvc.perform(post("/api/auth/sign-out")
-                        .session(session))
+                        .cookie(cookie))
                 .andExpect(status().isOk());
 
     }
