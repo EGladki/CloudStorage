@@ -10,6 +10,7 @@ import com.gladkiei.cloudstorage.repositories.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -66,14 +67,14 @@ public class AuthService {
         return UserMapper.INSTANCE.userToUserResponseDto(userRepository.save(user));
     }
 
-    public HttpStatus logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null) {
             securityContextLogoutHandler.logout(request, response, authentication);
-            return HttpStatus.NO_CONTENT;
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         } else {
-            return HttpStatus.UNAUTHORIZED;
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
