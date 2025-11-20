@@ -7,11 +7,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -21,11 +25,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 public class AuthIntegrationTest extends AbstractIntegrationTest {
+
+    private static final String REDIS_KEY_PREFIX = "cloudstorage:sessions:sessions:";
+
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private CookieHttpSessionIdResolver sessionIdResolver;
+
+    @Autowired
+    private StringRedisTemplate redis;
+
 
     @Test
     void givenValidCredentials_whenRegister_then201() throws Exception {
@@ -150,7 +164,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenUsernameIsOneLetter_whenLogin_then400() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("asafsadfsasafsadfasafsadfsafsafsafsasafsafsafsaasafsadfsafsafsafsaafsasafsadfsafsafsafsaafsafsa", "pass");
+        RegisterRequestDto dto = new RegisterRequestDto("a", "pass");
 
         mockMvc.perform(post("/api/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -239,6 +253,68 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
     void givenUnauthorizedUser_whenShowUserDetails_then401() throws Exception {
         mockMvc.perform(get("/api/user/me"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void givenAuthorizedUser_whenLoggedIn_thenSessionExists() throws Exception {
+        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+
+        mockMvc.perform(post("/api/auth/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated());
+
+        MvcResult result = mockMvc.perform(post("/api/auth/sign-in")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Cookie cookie = result.getResponse().getCookie("SESSION");
+        MockHttpServletRequestBuilder requestBuilder = get("/api/user/me")
+                .cookie(cookie);
+
+        MvcResult meResult = mockMvc.perform(requestBuilder)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String sessionId = sessionIdResolver.resolveSessionIds(meResult.getRequest()).get(0);
+        String redisKey = REDIS_KEY_PREFIX + sessionId;
+        assertThat(redis.hasKey(redisKey)).isTrue();
+    }
+
+    @Test
+    void givenAuthorizedUser_whenLogout_thenSessionDelete() throws Exception {
+        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+
+        mockMvc.perform(post("/api/auth/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated());
+
+        MvcResult result = mockMvc.perform(post("/api/auth/sign-in")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Cookie cookie = result.getResponse().getCookie("SESSION");
+        MockHttpServletRequestBuilder requestBuilder = get("/api/user/me")
+                .cookie(cookie);
+
+        MvcResult meResult = mockMvc.perform(requestBuilder)
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String sessionId = sessionIdResolver.resolveSessionIds(meResult.getRequest()).get(0);
+        String redisKey = REDIS_KEY_PREFIX + sessionId;
+        assertThat(redis.hasKey(redisKey)).isTrue();
+
+        mockMvc.perform(post("/api/auth/sign-out")
+                        .cookie(cookie))
+                .andExpect(status().isNoContent());
+
+        assertThat(redis.hasKey(redisKey)).isFalse();
     }
 
 }

@@ -18,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.session.web.http.CookieHttpSessionIdResolver;
 
 @Configuration
 @EnableWebSecurity
@@ -99,5 +100,10 @@ public class SecurityConfig {
     @Bean
     public SecurityContextLogoutHandler securityContextLogoutHandler() {
         return new SecurityContextLogoutHandler();
+    }
+
+    @Bean
+    public CookieHttpSessionIdResolver cookieHttpSessionIdResolver() {
+        return new CookieHttpSessionIdResolver();
     }
 }
