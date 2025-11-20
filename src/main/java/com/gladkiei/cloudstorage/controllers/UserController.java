@@ -1,6 +1,7 @@
 package com.gladkiei.cloudstorage.controllers;
 
 import com.gladkiei.cloudstorage.security.UserDetailsImpl;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,6 +17,7 @@ import java.util.Map;
 @RequestMapping("/api")
 public class UserController {
 
+    @Operation(summary = "Show current user username")
     @GetMapping("/user/me")
     public ResponseEntity<?> showUserDetails() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

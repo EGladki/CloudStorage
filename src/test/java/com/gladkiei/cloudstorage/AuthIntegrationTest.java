@@ -191,7 +191,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void givenAuthorizedUser_whenLogout_then200() throws Exception {
+    void givenAuthorizedUser_whenLogout_then204() throws Exception {
         RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
@@ -209,7 +209,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(post("/api/auth/sign-out")
                         .cookie(cookie))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test

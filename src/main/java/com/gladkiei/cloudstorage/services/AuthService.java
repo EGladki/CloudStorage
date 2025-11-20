@@ -30,7 +30,6 @@ public class AuthService {
     private final SecurityContextRepository securityContextRepository;
     private final SecurityContextLogoutHandler securityContextLogoutHandler;
 
-
     public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder encoder, SecurityContextRepository securityContextRepository, SecurityContextLogoutHandler securityContextLogoutHandler) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
@@ -74,7 +73,7 @@ public class AuthService {
             securityContextLogoutHandler.logout(request, response, authentication);
             return HttpStatus.NO_CONTENT;
         } else {
-            return HttpStatus.UNAUTHORIZED; //TODO status not correct
+            return HttpStatus.UNAUTHORIZED;
         }
     }
 
