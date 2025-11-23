@@ -1,4 +1,4 @@
-package com.gladkiei.cloudstorage.config.handlers;
+package com.gladkiei.cloudstorage.handlers;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

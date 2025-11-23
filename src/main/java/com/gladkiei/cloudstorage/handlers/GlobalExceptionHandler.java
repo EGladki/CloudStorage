@@ -1,4 +1,4 @@
-package com.gladkiei.cloudstorage.config.handlers;
+package com.gladkiei.cloudstorage.handlers;
 
 import com.gladkiei.cloudstorage.exceptions.CustomException;
 import com.gladkiei.cloudstorage.exceptions.InvalidCredentialsException;

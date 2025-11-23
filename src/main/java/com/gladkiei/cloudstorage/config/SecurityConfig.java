@@ -1,9 +1,10 @@
 package com.gladkiei.cloudstorage.config;
 
-import com.gladkiei.cloudstorage.config.handlers.LogoutHandler;
-import com.gladkiei.cloudstorage.config.handlers.RestAccessDeniedHandler;
-import com.gladkiei.cloudstorage.config.handlers.RestAuthenticationEntryPoint;
+import com.gladkiei.cloudstorage.handlers.LogoutHandler;
+import com.gladkiei.cloudstorage.handlers.RestAccessDeniedHandler;
+import com.gladkiei.cloudstorage.handlers.RestAuthenticationEntryPoint;
 import com.gladkiei.cloudstorage.security.UserDetailServiceImpl;
+import io.minio.MinioClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -43,12 +44,6 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .logout(logout -> logout.disable()
-//                        .logoutSuccessHandler(logoutHandler())
-//                        .logoutUrl("/api/auth/sign-out")
-//                        .invalidateHttpSession(true)
-//                        .clearAuthentication(true)
-//                        .deleteCookies("SESSION")
-//                        .permitAll()
                 );
         http.exceptionHandling(
                 ex -> ex
@@ -106,4 +101,6 @@ public class SecurityConfig {
     public CookieHttpSessionIdResolver cookieHttpSessionIdResolver() {
         return new CookieHttpSessionIdResolver();
     }
+
+
 }
