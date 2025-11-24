@@ -3,15 +3,12 @@ package com.gladkiei.cloudstorage.controllers;
 import io.minio.*;
 import io.minio.errors.*;
 import io.swagger.v3.oas.annotations.Operation;
-import org.hibernate.Remove;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,11 +19,14 @@ import java.security.NoSuchAlgorithmException;
 @RequestMapping("/api")
 public class MinioTestController {
 
-    @Autowired
-    private MinioClient minioClient;
+    private final MinioClient minioClient;
 
     @Value("${minio.root-bucket}")
     private String root;
+
+    public MinioTestController(MinioClient minioClient) {
+        this.minioClient = minioClient;
+    }
 
     @PostMapping("/upload-file")
     @Operation(summary = "test upload")

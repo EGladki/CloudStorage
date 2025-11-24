@@ -88,18 +88,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityContextRepository securityContextRepository() {
-        return new HttpSessionSecurityContextRepository();
-    }
-
-    @Bean
     public SecurityContextLogoutHandler securityContextLogoutHandler() {
         return new SecurityContextLogoutHandler();
-    }
-
-    @Bean
-    public CookieHttpSessionIdResolver cookieHttpSessionIdResolver() {
-        return new CookieHttpSessionIdResolver();
     }
 
 
