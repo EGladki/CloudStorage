@@ -1,5 +1,8 @@
 package com.gladkiei.cloudstorage;
 
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -8,6 +11,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
+//@PropertySource("classpath:application-test.properties")
+@ActiveProfiles("test")
 public abstract class AbstractIntegrationTest {
 
     @Container
@@ -19,6 +24,10 @@ public abstract class AbstractIntegrationTest {
     @Container
     protected static final GenericContainer<?> redis = new GenericContainer<>("redis:8.2.3")
             .withExposedPorts(6379);
+
+    @Container
+    protected static final GenericContainer<?> minio = new GenericContainer<>("minio/minio")
+            .withExposedPorts(9000, 9001);
 
 
     @DynamicPropertySource

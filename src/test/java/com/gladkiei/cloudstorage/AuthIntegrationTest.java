@@ -5,11 +5,16 @@ import com.gladkiei.cloudstorage.dto.RegisterRequestDto;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.session.web.http.CookieHttpSessionIdResolver;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -21,15 +26,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+//@PropertySource("classpath:application-test.properties")
 public class AuthIntegrationTest extends AbstractIntegrationTest {
-
-    private static final String REDIS_KEY_PREFIX = "cloudstorage:sessions:sessions:";
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -39,6 +41,12 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private StringRedisTemplate redis;
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Value("${redis.data.key-prefix}")
+    private String redisKeyPrefix;
 
 
     @Test
@@ -279,7 +287,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
                 .andReturn();
 
         String sessionId = sessionIdResolver.resolveSessionIds(meResult.getRequest()).get(0);
-        String redisKey = REDIS_KEY_PREFIX + sessionId;
+        String redisKey = redisKeyPrefix + sessionId;
         assertThat(redis.hasKey(redisKey)).isTrue();
     }
 
@@ -307,7 +315,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
                 .andReturn();
 
         String sessionId = sessionIdResolver.resolveSessionIds(meResult.getRequest()).get(0);
-        String redisKey = REDIS_KEY_PREFIX + sessionId;
+        String redisKey = redisKeyPrefix + sessionId;
         assertThat(redis.hasKey(redisKey)).isTrue();
 
         mockMvc.perform(post("/api/auth/sign-out")
