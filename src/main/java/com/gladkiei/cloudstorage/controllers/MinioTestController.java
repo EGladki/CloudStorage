@@ -72,4 +72,15 @@ public class MinioTestController {
 
     }
 
+    @PostMapping("/put-directory")
+    @Operation(summary = "put-directory")
+    public void putDirectory(@RequestBody String name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        minioClient.uploadObject(
+                UploadObjectArgs.builder()
+                        .bucket("user-files")
+                        .object(name + "/")
+                        .build());
+
+    }
+
 }

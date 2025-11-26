@@ -1,11 +1,14 @@
 package com.gladkiei.cloudstorage;
 
+import io.minio.MinioClient;
+import org.junit.jupiter.api.BeforeAll;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -26,8 +29,19 @@ public abstract class AbstractIntegrationTest {
             .withExposedPorts(6379);
 
     @Container
-    protected static final GenericContainer<?> minio = new GenericContainer<>("minio/minio")
-            .withExposedPorts(9000, 9001);
+    protected static final MinIOContainer minio = new MinIOContainer("minio/minio:latest")
+            .withExposedPorts(9000, 9001)
+            .withUserName("minioadmin")
+            .withPassword("minioadmin");
+
+    @BeforeAll
+    static void setUpMinio() {
+        minio.start();
+        MinioClient.builder()
+                .endpoint(minio.getS3URL())
+                .credentials("minioadmin","minioadmin")
+                .build();
+    }
 
 
     @DynamicPropertySource
@@ -42,6 +56,7 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.liquibase.change-log",
                 () -> "classpath:db/changelog/db.changelog-master.yaml");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+
     }
 
 }
