@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -72,13 +73,15 @@ public class MinioTestController {
 
     }
 
-    @PostMapping("/put-directory")
-    @Operation(summary = "put-directory")
-    public void putDirectory(@RequestBody String name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        minioClient.uploadObject(
-                UploadObjectArgs.builder()
+    @PostMapping("/put-object")
+    @Operation(summary = "put object or create directory")
+    public void putObject(@RequestBody String name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+        minioClient.putObject(
+                PutObjectArgs.builder()
                         .bucket("user-files")
-                        .object(name + "/")
+                        .object(name)
+                        .stream(
+                                new ByteArrayInputStream(new byte[] {}), 0, -1)
                         .build());
 
     }

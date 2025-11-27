@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-import static java.util.Optional.empty;
-
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

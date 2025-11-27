@@ -1,9 +1,5 @@
 package com.gladkiei.cloudstorage;
 
-import io.minio.MinioClient;
-import org.junit.jupiter.api.BeforeAll;
-import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -34,26 +30,11 @@ public abstract class AbstractIntegrationTest {
             .withUserName("testMinio")
             .withPassword("testMinio");
 
-//    @BeforeAll
-//    static void setUpMinio() {
-//        minio.start();
-//        MinioClient.builder()
-//                .endpoint(minio.getS3URL())
-//                .credentials("minioadmin", "minioadmin")
-//                .build();
-//    }
-
-
     @DynamicPropertySource
     static void configure(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
-//        registry.add("spring.datasource.username", postgres::getUsername);
-//        registry.add("spring.datasource.password", postgres::getPassword);
-
         registry.add("spring.data.redis.port", redis::getFirstMappedPort);
         registry.add("minio.endpoint", minio::getS3URL);
-
-
     }
 
 }

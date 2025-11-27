@@ -12,7 +12,7 @@ import java.io.IOException;
 @Component
 public class LogoutHandler implements LogoutSuccessHandler {
     @Override
-    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
         response.setContentType("application/json;charset=UTF-8");
 
         if (authentication == null || !authentication.isAuthenticated()) {
