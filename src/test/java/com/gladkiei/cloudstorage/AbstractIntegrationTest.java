@@ -21,8 +21,8 @@ public abstract class AbstractIntegrationTest {
     @Container
     protected static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
             .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test");
+            .withUsername("testPostgres")
+            .withPassword("testPostgres");
 
     @Container
     protected static final GenericContainer<?> redis = new GenericContainer<>("redis:8.2.3")
@@ -31,31 +31,28 @@ public abstract class AbstractIntegrationTest {
     @Container
     protected static final MinIOContainer minio = new MinIOContainer("minio/minio:latest")
             .withExposedPorts(9000, 9001)
-            .withUserName("minioadmin")
-            .withPassword("minioadmin");
+            .withUserName("testMinio")
+            .withPassword("testMinio");
 
-    @BeforeAll
-    static void setUpMinio() {
-        minio.start();
-        MinioClient.builder()
-                .endpoint(minio.getS3URL())
-                .credentials("minioadmin","minioadmin")
-                .build();
-    }
+//    @BeforeAll
+//    static void setUpMinio() {
+//        minio.start();
+//        MinioClient.builder()
+//                .endpoint(minio.getS3URL())
+//                .credentials("minioadmin", "minioadmin")
+//                .build();
+//    }
 
 
     @DynamicPropertySource
     static void configure(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+//        registry.add("spring.datasource.username", postgres::getUsername);
+//        registry.add("spring.datasource.password", postgres::getPassword);
 
-        registry.add("spring.data.redis.host", () -> redis.getHost());
-        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
+        registry.add("spring.data.redis.port", redis::getFirstMappedPort);
+        registry.add("minio.endpoint", minio::getS3URL);
 
-        registry.add("spring.liquibase.change-log",
-                () -> "classpath:db/changelog/db.changelog-master.yaml");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
 
     }
 

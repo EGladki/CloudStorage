@@ -6,6 +6,7 @@ import io.minio.MinioClient;
 import io.minio.errors.*;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -20,8 +21,9 @@ public class MinioRootBucketInitializer {
 
     private final MinioClient minioClient;
     @Value("${minio.root-bucket}")
-    private String root;
+    private String root ;
 
+    @Autowired
     public MinioRootBucketInitializer(MinioClient minioClient) {
         this.minioClient = minioClient;
     }

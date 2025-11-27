@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("!test")
+@Profile("test")
 public class MinioConfig {
 
     @Value("${minio.endpoint}")
@@ -19,10 +19,12 @@ public class MinioConfig {
     @Value("${minio.secret-key}")
     private String secretKey;
 
+    @Value("${minio.root-bucket}")
+    private String rootBucket;
+
     @Bean
-    public MinioClient minioClient(){
-        return MinioClient
-                .builder()
+    public MinioClient minioClient() {
+        return MinioClient.builder()
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
                 .build();
