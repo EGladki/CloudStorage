@@ -1,17 +1,19 @@
 package com.gladkiei.cloudstorage.models;
 
+import com.gladkiei.cloudstorage.enums.Type;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Setter
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
+@SuperBuilder
 @ToString
-public class File {
+public class File extends Resource {
 
-    private String path;
+    private Long size;
 
-    private String name;
-
-    private byte size;
+    public File(String path, String name, Long size ,Type type) {
+        super(path, name, type);
+        this.size = size;
+    }
 }

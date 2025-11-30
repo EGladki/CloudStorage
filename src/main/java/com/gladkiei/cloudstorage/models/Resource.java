@@ -6,11 +6,15 @@ import lombok.experimental.SuperBuilder;
 
 @Setter
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
 @SuperBuilder
-@ToString
-public class Directory extends Resource {
+public abstract class Resource {
 
-    public Directory(String path, String name, Type type) {
-        super(path, name, type);
-    }
+    private String path;
+
+    private String name;
+
+    private Type type;
+
 }

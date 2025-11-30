@@ -1,8 +1,11 @@
 package com.gladkiei.cloudstorage.controllers;
 
-import com.gladkiei.cloudstorage.dto.RegisterRequestDto;
+import com.gladkiei.cloudstorage.dto.AuthRequestDto;
+import com.gladkiei.cloudstorage.dto.AuthResponseDto;
 import com.gladkiei.cloudstorage.dto.UserResponseDto;
+import com.gladkiei.cloudstorage.mapper.DtoMapper;
 import com.gladkiei.cloudstorage.services.AuthService;
+import com.gladkiei.cloudstorage.services.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -19,9 +22,11 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final AuthService authService;
+    private final FileStorageService fileStorageService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, FileStorageService fileStorageService) {
         this.authService = authService;
+        this.fileStorageService = fileStorageService;
     }
 
     @Operation(summary = "Login using existing credentials")
@@ -30,9 +35,9 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Bad credentials")
     })
     @PostMapping("/sign-in")
-    public ResponseEntity<?> processLogin(@Valid @RequestBody RegisterRequestDto dto, HttpServletRequest request, HttpServletResponse response) {
-        authService.authenticate(dto, request, response);
-        return ResponseEntity.status(HttpStatus.OK).body(Map.of("username", dto.getUsername()));
+    public ResponseEntity<?> processLogin(@Valid @RequestBody AuthRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
+        AuthResponseDto responseDto = authService.authenticate(requestDto, request, response);
+        return ResponseEntity.status(HttpStatus.OK).body(responseDto);
     }
 
     @Operation(summary = "New user registration", description = "Create new user")
@@ -41,9 +46,12 @@ public class AuthController {
             @ApiResponse(responseCode = "409", description = "Username already taken")
     })
     @PostMapping("/sign-up")
-    public ResponseEntity<?> processRegistration(@Valid @RequestBody RegisterRequestDto dto) {
-        UserResponseDto responseDto = authService.register(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("username", responseDto.getUsername()));
+    public ResponseEntity<?> processRegistration(@Valid @RequestBody AuthRequestDto requestDto) {
+        UserResponseDto userResponseDto = authService.register(requestDto);
+        fileStorageService.createRootDirectory(userResponseDto);
+
+        AuthResponseDto responseDto = DtoMapper.INSTANCE.requestDtoToResponseDto(requestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
     @Operation(summary = "Logout")

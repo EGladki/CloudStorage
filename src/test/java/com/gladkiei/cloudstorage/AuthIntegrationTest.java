@@ -1,7 +1,7 @@
 package com.gladkiei.cloudstorage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gladkiei.cloudstorage.dto.RegisterRequestDto;
+import com.gladkiei.cloudstorage.dto.AuthRequestDto;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +48,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenValidCredentials_whenRegister_then201() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+        AuthRequestDto dto = new AuthRequestDto("name", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -59,7 +59,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenUsernameIsBlank_whenRegister_then400() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("", "pass");
+        AuthRequestDto dto = new AuthRequestDto("", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,7 +72,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenPasswordIsBlank_whenRegister_then400() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "");
+        AuthRequestDto dto = new AuthRequestDto("name", "");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -85,7 +85,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenUsernameIsOneLetter_whenRegister_then400() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("a", "pass");
+        AuthRequestDto dto = new AuthRequestDto("a", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -98,7 +98,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenPasswordIsOneSymbol_whenRegister_then400() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "1");
+        AuthRequestDto dto = new AuthRequestDto("name", "1");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -111,7 +111,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenAlreadyTakenCredentials_whenRegister_then409() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+        AuthRequestDto dto = new AuthRequestDto("name", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -127,7 +127,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenValidCredentials_whenLogin_then200() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+        AuthRequestDto dto = new AuthRequestDto("name", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -143,7 +143,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenUsernameIsBlank_whenLogin_then400() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("", "pass");
+        AuthRequestDto dto = new AuthRequestDto("", "pass");
 
         mockMvc.perform(post("/api/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -156,7 +156,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenPasswordIsBlank_whenLogin_then400() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "");
+        AuthRequestDto dto = new AuthRequestDto("name", "");
 
         mockMvc.perform(post("/api/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -169,7 +169,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenUsernameIsOneLetter_whenLogin_then400() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("a", "pass");
+        AuthRequestDto dto = new AuthRequestDto("a", "pass");
 
         mockMvc.perform(post("/api/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -182,7 +182,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenPasswordIsOneSymbol_whenLogin_then400() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "1");
+        AuthRequestDto dto = new AuthRequestDto("name", "1");
 
         mockMvc.perform(post("/api/auth/sign-in")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -195,8 +195,8 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenInvalidCredentials_whenLogin_then401() throws Exception {
-        RegisterRequestDto validDto = new RegisterRequestDto("name", "pass");
-        RegisterRequestDto invalidDto = new RegisterRequestDto("testName", "testPass");
+        AuthRequestDto validDto = new AuthRequestDto("name", "pass");
+        AuthRequestDto invalidDto = new AuthRequestDto("testName", "testPass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -211,7 +211,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenAuthorizedUser_whenLogout_then204() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+        AuthRequestDto dto = new AuthRequestDto("name", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -233,7 +233,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenAuthorizedUser_whenShowUserDetails_then200() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+        AuthRequestDto dto = new AuthRequestDto("name", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -262,7 +262,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenAuthorizedUser_whenLoggedIn_thenSessionExists() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+        AuthRequestDto dto = new AuthRequestDto("name", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -290,7 +290,7 @@ public class AuthIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void givenAuthorizedUser_whenLogout_thenSessionDelete() throws Exception {
-        RegisterRequestDto dto = new RegisterRequestDto("name", "pass");
+        AuthRequestDto dto = new AuthRequestDto("name", "pass");
 
         mockMvc.perform(post("/api/auth/sign-up")
                         .contentType(MediaType.APPLICATION_JSON)

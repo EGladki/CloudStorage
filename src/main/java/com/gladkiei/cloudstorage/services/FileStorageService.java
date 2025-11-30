@@ -1,8 +1,19 @@
 package com.gladkiei.cloudstorage.services;
 
+import com.gladkiei.cloudstorage.dto.UserResponseDto;
+import com.gladkiei.cloudstorage.models.Directory;
+import com.gladkiei.cloudstorage.models.Resource;
+
+import java.util.List;
+import java.util.Map;
+
 public interface FileStorageService {
 
-    void createDirectory(String path);
+    Directory createDirectory(String path, UserResponseDto userResponseDto);
+
+    void createRootDirectory(UserResponseDto dto);
+
+    List<Resource> getContent(String path, UserResponseDto userResponseDto);
 
     void upload();
 

@@ -1,9 +1,11 @@
 package com.gladkiei.cloudstorage.services;
 
-import com.gladkiei.cloudstorage.dto.RegisterRequestDto;
+import com.gladkiei.cloudstorage.dto.AuthRequestDto;
+import com.gladkiei.cloudstorage.dto.AuthResponseDto;
 import com.gladkiei.cloudstorage.dto.UserResponseDto;
 import com.gladkiei.cloudstorage.exceptions.InvalidCredentialsException;
 import com.gladkiei.cloudstorage.exceptions.UserAlreadyTakenException;
+import com.gladkiei.cloudstorage.mapper.DtoMapper;
 import com.gladkiei.cloudstorage.mapper.UserMapper;
 import com.gladkiei.cloudstorage.models.User;
 import com.gladkiei.cloudstorage.repositories.UserRepository;
@@ -31,6 +33,7 @@ public class AuthService {
     private final SecurityContextRepository securityContextRepository;
     private final SecurityContextLogoutHandler securityContextLogoutHandler;
 
+
     public AuthService(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder encoder, SecurityContextRepository securityContextRepository, SecurityContextLogoutHandler securityContextLogoutHandler) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
@@ -39,7 +42,7 @@ public class AuthService {
         this.securityContextLogoutHandler = securityContextLogoutHandler;
     }
 
-    public void authenticate(RegisterRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
+    public AuthResponseDto authenticate(AuthRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
         Authentication authRequest = new UsernamePasswordAuthenticationToken(
                 requestDto.getUsername(),
                 requestDto.getPassword()
@@ -56,9 +59,11 @@ public class AuthService {
         securityContext.setAuthentication(authentication);
         securityContextRepository.saveContext(securityContext, request, response);
         SecurityContextHolder.setContext(securityContext);
+
+        return DtoMapper.INSTANCE.requestDtoToResponseDto(requestDto);
     }
 
-    public UserResponseDto register(RegisterRequestDto requestDto) {
+    public UserResponseDto register(AuthRequestDto requestDto) {
         if (userRepository.existsByUsername(requestDto.getUsername())) {
             throw new UserAlreadyTakenException(requestDto.getUsername());
         }

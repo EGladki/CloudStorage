@@ -1,6 +1,6 @@
 package com.gladkiei.cloudstorage;
 
-import com.gladkiei.cloudstorage.dto.RegisterRequestDto;
+import com.gladkiei.cloudstorage.dto.AuthRequestDto;
 import com.gladkiei.cloudstorage.exceptions.InvalidCredentialsException;
 import com.gladkiei.cloudstorage.exceptions.UserAlreadyTakenException;
 import com.gladkiei.cloudstorage.models.User;
@@ -59,7 +59,7 @@ public class AuthServiceUnitTest {
 
     @Test
     void givenValidRequest_whenAuthenticate_thenSuccess() {
-        RegisterRequestDto validRequestDto = createRegisterRequestDto();
+        AuthRequestDto validRequestDto = createRegisterRequestDto();
         Authentication authenticated = new UsernamePasswordAuthenticationToken(validRequestDto.getUsername(), null, List.of());
         when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(authenticated);
 
@@ -70,7 +70,7 @@ public class AuthServiceUnitTest {
 
     @Test
     void givenInvalidRequest_whenAuthenticate_thenInvalidCredentialsException() {
-        RegisterRequestDto invalidRequestDto = createRegisterRequestDto();
+        AuthRequestDto invalidRequestDto = createRegisterRequestDto();
         when(authenticationManager.authenticate(any(Authentication.class))).thenThrow(new BadCredentialsException("Invalid credentials"));
 
         assertThatThrownBy(() -> authService.authenticate(invalidRequestDto, request, response))
@@ -82,7 +82,7 @@ public class AuthServiceUnitTest {
 
     @Test
     void givenValidRequest_whenRegister_thanSuccess() {
-        RegisterRequestDto validRequestDto = createRegisterRequestDto();
+        AuthRequestDto validRequestDto = createRegisterRequestDto();
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
 
         when(userRepository.existsByUsername(validRequestDto.getUsername())).thenReturn(false);
@@ -99,7 +99,7 @@ public class AuthServiceUnitTest {
 
     @Test
     void givenInvalidRequest_whenRegisterWithAlreadyTakenName_thanUserAlreadyTakenException() {
-        RegisterRequestDto invalidRequestDto = createRegisterRequestDto();
+        AuthRequestDto invalidRequestDto = createRegisterRequestDto();
 
         when(userRepository.existsByUsername(invalidRequestDto.getUsername())).thenReturn(true);
 
@@ -110,8 +110,8 @@ public class AuthServiceUnitTest {
         verify(encoder, times(0)).encode(invalidRequestDto.getPassword());
     }
 
-    private RegisterRequestDto createRegisterRequestDto() {
-        return RegisterRequestDto.builder()
+    private AuthRequestDto createRegisterRequestDto() {
+        return AuthRequestDto.builder()
                 .username("username")
                 .password("password")
                 .build();

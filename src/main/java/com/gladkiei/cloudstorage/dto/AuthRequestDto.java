@@ -11,8 +11,8 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Schema(description = "User registration Dto")
-public class RegisterRequestDto {
+    @Schema(description = "User auth request dto")
+public class AuthRequestDto {
 
     @Schema(description = "Username", example = "Tom")
     @NotBlank(message = "Username is blank")

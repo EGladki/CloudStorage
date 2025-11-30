@@ -1,13 +1,14 @@
 package com.gladkiei.cloudstorage.controllers;
 
+import com.gladkiei.cloudstorage.security.UserDetailsImpl;
 import io.minio.*;
 import io.minio.errors.*;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -31,18 +32,24 @@ public class MinioTestController {
 
     @PostMapping("/upload-file")
     @Operation(summary = "test upload")
-    public void upload() throws IOException, ServerException, InsufficientDataException, ErrorResponseException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        File file = new File("C:\\Dev\\data\\text.txt");
-        StringBuilder builder = new StringBuilder();
-        builder.append("From ");
-        builder.append("builder");
-        byte[] data = builder.toString().getBytes(StandardCharsets.UTF_8);
+    public void upload()  {
+        try {
+            File file = new File("C:\\Dev\\data\\text.txt");
+            StringBuilder builder = new StringBuilder();
+            builder.append("From ");
+            builder.append("builder");
+            byte[] data = builder.toString().getBytes(StandardCharsets.UTF_8);
 
-        minioClient.uploadObject(UploadObjectArgs.builder()
-                .bucket("user-files")
-                .object("text.txt")
-                .filename("C:\\Dev\\data\\text.txt")
-                .build());
+            minioClient.uploadObject(UploadObjectArgs.builder()
+                    .bucket(root)
+                    .object("text.txt")
+                    .filename("C:\\Dev\\data\\text.txt")
+                    .build());
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @PostMapping("/delete-file")
@@ -70,19 +77,6 @@ public class MinioTestController {
         minioClient.removeBucket(RemoveBucketArgs.builder()
                 .bucket(root + name)
                 .build());
-
-    }
-
-    @PostMapping("/put-object")
-    @Operation(summary = "put object or create directory")
-    public void putObject(@RequestBody String name) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket("user-files")
-                        .object(name)
-                        .stream(
-                                new ByteArrayInputStream(new byte[] {}), 0, -1)
-                        .build());
 
     }
 
