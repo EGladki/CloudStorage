@@ -3,6 +3,8 @@ package com.gladkiei.cloudstorage.services;
 import com.gladkiei.cloudstorage.dto.UserResponseDto;
 import com.gladkiei.cloudstorage.enums.Type;
 import com.gladkiei.cloudstorage.exceptions.BadRequestException;
+import com.gladkiei.cloudstorage.exceptions.InternalFileStorageException;
+import com.gladkiei.cloudstorage.exceptions.NotFoundException;
 import com.gladkiei.cloudstorage.models.Directory;
 import com.gladkiei.cloudstorage.models.File;
 import com.gladkiei.cloudstorage.models.Resource;
@@ -61,20 +63,11 @@ public class FileStorageMinioService implements FileStorageService {
         return parse(input);
     }
 
-
-    @Override
-    public void upload() {
-
-    }
-
-    @Override
-    public void download() {
-
-    }
-
     public List<Resource> getContent(String path, UserResponseDto userResponseDto) {
+        validate(path);
         Iterable<Result<Item>> results;
         List<Resource> list = new ArrayList<>();
+
         try {
             results = minioClient.listObjects(
                     ListObjectsArgs.builder()
@@ -92,10 +85,24 @@ public class FileStorageMinioService implements FileStorageService {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
-
+            throw new InternalFileStorageException("Unknown file storage exception");
         }
+
+        if (list.isEmpty()) {
+            throw new NotFoundException("Directory not found");
+        }
+
         return list;
+    }
+
+    @Override
+    public void upload() {
+
+    }
+
+    @Override
+    public void download() {
+
     }
 
     private void validate(String path) {
@@ -110,8 +117,11 @@ public class FileStorageMinioService implements FileStorageService {
         String name = input.substring(idx + 1);
 
         return new Directory(path, name, Type.DIRECTORY);
-
     }
+
+//    private String parseLastFileName(String name) {
+//        "user-20-files/1/2/"
+//    }
 
     private String specificUserPath(Long id) {
         return "user-" + id + "-files/";
