@@ -15,8 +15,11 @@ public interface FileStorageService {
 
     List<Resource> getContent(String path, UserResponseDto userResponseDto);
 
+    List<Resource> getResource(String path, UserResponseDto userResponseDto);
+
+    void delete(String path, UserResponseDto userResponseDto);
+
     void upload();
 
     void download();
-
 }

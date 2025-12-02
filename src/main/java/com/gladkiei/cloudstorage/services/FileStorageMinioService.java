@@ -8,10 +8,7 @@ import com.gladkiei.cloudstorage.exceptions.NotFoundException;
 import com.gladkiei.cloudstorage.models.Directory;
 import com.gladkiei.cloudstorage.models.File;
 import com.gladkiei.cloudstorage.models.Resource;
-import io.minio.ListObjectsArgs;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
-import io.minio.Result;
+import io.minio.*;
 import io.minio.messages.Item;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -48,7 +45,7 @@ public class FileStorageMinioService implements FileStorageService {
 
     @Override
     public Directory createDirectory(String input, UserResponseDto userResponseDto) {
-        validate(input);
+        validateDirectoryPath(input);
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
@@ -60,27 +57,28 @@ public class FileStorageMinioService implements FileStorageService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return parse(input);
+        return parseFromInput(input);
     }
 
     public List<Resource> getContent(String path, UserResponseDto userResponseDto) {
-        validate(path);
+        validateDirectoryPath(path);
         Iterable<Result<Item>> results;
         List<Resource> list = new ArrayList<>();
+        String specificUserPath = specificUserPath(userResponseDto.getId());
 
         try {
             results = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(rootBucket)
-                            .prefix(specificUserPath(userResponseDto.getId()) + path)
+                            .prefix(specificUserPath + path)
                             .build());
 
             for (Result<Item> result : results) {
                 Item item = result.get();
                 if (item.isDir()) {
-                    list.add(new Directory(path, item.objectName(), Type.DIRECTORY));
+                    list.add(new Directory(path, parseName(item.objectName(), specificUserPath, path), Type.DIRECTORY));
                 } else {
-                    list.add(new File(path, item.objectName(), item.size(), Type.FILE));
+                    list.add(new File(path, parseName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
                 }
             }
 
@@ -96,6 +94,57 @@ public class FileStorageMinioService implements FileStorageService {
     }
 
     @Override
+    public List<Resource> getResource(String path, UserResponseDto userResponseDto) {
+        validateDirectoryPath(path);
+        Iterable<Result<Item>> results;
+        List<Resource> list = new ArrayList<>();
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+
+        try {
+            results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(rootBucket)
+                            .prefix(specificUserPath + path)
+                            .build());
+
+            for (Result<Item> result : results) {
+                Item item = result.get();
+                if (item.isDir()) {
+                    list.add(new Directory(path, parseName(item.objectName(), specificUserPath, path), Type.DIRECTORY));
+                } else {
+                    list.add(new File(path, parseName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new InternalFileStorageException("Unknown file storage exception");
+        }
+
+        if (list.isEmpty()) {
+            throw new NotFoundException("Directory not found");
+        }
+
+        return list;
+    }
+
+    @Override
+    public void delete(String path, UserResponseDto userResponseDto) {
+        validateFilePath(path);
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+        //check for 404 not found resource
+
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + path)
+                            .build());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void upload() {
 
     }
@@ -105,13 +154,23 @@ public class FileStorageMinioService implements FileStorageService {
 
     }
 
-    private void validate(String path) {
+    private void validateDirectoryPath(String path) {
+        if (path.isEmpty()) {
+            return;
+        }
+
         if (!path.endsWith("/") || path.trim().equals("/") || path.startsWith("/")) {
             throw new BadRequestException("Invalid path. Directory must ends with '/'");
         }
     }
 
-    private Directory parse(String input) {
+    private void validateFilePath(String path) {
+        if (path == null || path.isBlank() ||!path.endsWith("/") || path.trim().equals("/") || path.startsWith("/")) {
+            throw new BadRequestException("Path not valid");
+        }
+    }
+
+    private Directory parseFromInput(String input) {
         int idx = input.lastIndexOf("/", input.length() - 2);
         String path = input.substring(0, idx + 1);
         String name = input.substring(idx + 1);
@@ -119,9 +178,9 @@ public class FileStorageMinioService implements FileStorageService {
         return new Directory(path, name, Type.DIRECTORY);
     }
 
-//    private String parseLastFileName(String name) {
-//        "user-20-files/1/2/"
-//    }
+    private String parseName(String objectName, String specificUserPath, String path) {
+        return objectName.substring(specificUserPath.length() + path.length());
+    }
 
     private String specificUserPath(Long id) {
         return "user-" + id + "-files/";
