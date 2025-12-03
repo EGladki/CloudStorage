@@ -9,6 +9,7 @@ import com.gladkiei.cloudstorage.services.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -47,6 +48,15 @@ public class FileManagerController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+    @GetMapping("/resource/download")
+    @Operation(summary = "download resource")
+    public ResponseEntity<?> download(@RequestParam String path) {
+        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+        fileStorageService.download(path, userResponseDto);
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
     @PostMapping("/directory")
     @Operation(summary = "create directory")
     public ResponseEntity<?> createDirectory(@RequestParam String path) {
@@ -64,6 +74,8 @@ public class FileManagerController {
 
         return ResponseEntity.status(HttpStatus.OK).body(content);
     }
+
+
 
     private UserResponseDto getUserDtoFromAuthentication() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

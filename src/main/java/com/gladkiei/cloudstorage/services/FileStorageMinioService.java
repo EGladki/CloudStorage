@@ -39,7 +39,7 @@ public class FileStorageMinioService implements FileStorageService {
                                     new ByteArrayInputStream(new byte[]{}), 0, -1)
                             .build());
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new InternalFileStorageException();
         }
     }
 
@@ -55,7 +55,7 @@ public class FileStorageMinioService implements FileStorageService {
                                     new ByteArrayInputStream(new byte[]{}), 0, -1)
                             .build());
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new InternalFileStorageException();
         }
         return parseFromInput(input);
     }
@@ -83,7 +83,7 @@ public class FileStorageMinioService implements FileStorageService {
             }
 
         } catch (Exception e) {
-            throw new InternalFileStorageException("Unknown file storage exception");
+            throw new InternalFileStorageException();
         }
 
         if (list.isEmpty()) {
@@ -95,11 +95,33 @@ public class FileStorageMinioService implements FileStorageService {
 
     @Override
     public List<Resource> getResource(String path, UserResponseDto userResponseDto) {
-        validateDirectoryPath(path);
-        Iterable<Result<Item>> results;
-        List<Resource> list = new ArrayList<>();
+        validateFilePath(path);
         String specificUserPath = specificUserPath(userResponseDto.getId());
 
+        return getResourcesByPath(path, specificUserPath);
+    }
+
+    @Override
+    public void delete(String path, UserResponseDto userResponseDto) {
+        validateFilePath(path);
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+
+        getResourcesByPath(path, specificUserPath);
+
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + path)
+                            .build());
+        } catch (Exception e) {
+            throw new InternalFileStorageException();
+        }
+    }
+
+    private List<Resource> getResourcesByPath(String path, String specificUserPath) {
+        Iterable<Result<Item>> results;
+        List<Resource> list = new ArrayList<>();
         try {
             results = minioClient.listObjects(
                     ListObjectsArgs.builder()
@@ -109,48 +131,40 @@ public class FileStorageMinioService implements FileStorageService {
 
             for (Result<Item> result : results) {
                 Item item = result.get();
-                if (item.isDir()) {
-                    list.add(new Directory(path, parseName(item.objectName(), specificUserPath, path), Type.DIRECTORY));
-                } else {
+                if (!item.isDir()) {
                     list.add(new File(path, parseName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
                 }
             }
 
         } catch (Exception e) {
-            throw new InternalFileStorageException("Unknown file storage exception");
+            throw new InternalFileStorageException();
         }
 
         if (list.isEmpty()) {
-            throw new NotFoundException("Directory not found");
+            throw new NotFoundException("File not found");
         }
-
         return list;
     }
 
     @Override
-    public void delete(String path, UserResponseDto userResponseDto) {
-        validateFilePath(path);
+    public void download(String path, UserResponseDto userResponseDto) {
         String specificUserPath = specificUserPath(userResponseDto.getId());
-        //check for 404 not found resource
-
         try {
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder()
+            minioClient.downloadObject(
+                    DownloadObjectArgs.builder()
                             .bucket(rootBucket)
                             .object(specificUserPath + path)
+                            .filename("C:\\Users\\user\\Desktop\\" + path) // todo
                             .build());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new InternalFileStorageException();
         }
+
+
     }
 
     @Override
     public void upload() {
-
-    }
-
-    @Override
-    public void download() {
 
     }
 
@@ -165,7 +179,7 @@ public class FileStorageMinioService implements FileStorageService {
     }
 
     private void validateFilePath(String path) {
-        if (path == null || path.isBlank() ||!path.endsWith("/") || path.trim().equals("/") || path.startsWith("/")) {
+        if (path == null || path.isBlank() || path.endsWith("/")) {
             throw new BadRequestException("Path not valid");
         }
     }

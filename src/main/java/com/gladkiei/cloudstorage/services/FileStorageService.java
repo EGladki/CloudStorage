@@ -19,7 +19,7 @@ public interface FileStorageService {
 
     void delete(String path, UserResponseDto userResponseDto);
 
-    void upload();
+    void download(String path, UserResponseDto userResponseDto);
 
-    void download();
+    void upload();
 }
