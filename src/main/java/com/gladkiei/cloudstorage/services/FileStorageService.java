@@ -4,8 +4,8 @@ import com.gladkiei.cloudstorage.dto.UserResponseDto;
 import com.gladkiei.cloudstorage.models.Directory;
 import com.gladkiei.cloudstorage.models.Resource;
 
+import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 public interface FileStorageService {
 
@@ -19,7 +19,9 @@ public interface FileStorageService {
 
     void delete(String path, UserResponseDto userResponseDto);
 
-    void download(String path, UserResponseDto userResponseDto);
+    byte[] downloadSingleFile(String path, UserResponseDto userResponseDto);
+
+    byte[] downloadDirectory(String path, UserResponseDto userResponseDto) throws IOException;
 
     void upload();
 }
