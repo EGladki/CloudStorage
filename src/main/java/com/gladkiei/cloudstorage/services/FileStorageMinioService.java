@@ -100,17 +100,15 @@ public class FileStorageMinioService implements FileStorageService {
     @Override
     public List<Resource> getResource(String path, UserResponseDto userResponseDto) {
         validateFilePath(path);
-        String specificUserPath = specificUserPath(userResponseDto.getId());
 
-        return getResourcesByPath(path, specificUserPath);
+        return getResourcesByPath(path, userResponseDto);
     }
 
     @Override
     public void delete(String path, UserResponseDto userResponseDto) {
         validateFilePath(path);
         String specificUserPath = specificUserPath(userResponseDto.getId());
-
-        getResourcesByPath(path, specificUserPath);
+        getResourcesByPath(path, userResponseDto);
 
         try {
             minioClient.removeObject(
@@ -123,8 +121,9 @@ public class FileStorageMinioService implements FileStorageService {
         }
     }
 
-    private List<Resource> getResourcesByPath(String path, String specificUserPath) {
+    private List<Resource> getResourcesByPath(String path, UserResponseDto userResponseDto) {
         Iterable<Result<Item>> results;
+        String specificUserPath = specificUserPath(userResponseDto.getId());
         List<Resource> list = new ArrayList<>();
         try {
             results = minioClient.listObjects(
@@ -154,6 +153,7 @@ public class FileStorageMinioService implements FileStorageService {
     public byte[] downloadFile(String path, UserResponseDto userResponseDto) {
         validateFilePath(path);
         String specificUserPath = specificUserPath(userResponseDto.getId());
+
         byte[] result;
         try {
             InputStream stream = minioClient.getObject(
@@ -171,8 +171,8 @@ public class FileStorageMinioService implements FileStorageService {
 
     public byte[] downloadDirectoryAsZip(String path, UserResponseDto userResponseDto) throws IOException {
         validateDirectoryPath(path);
+        List<Resource> resources = getResourcesByPath(path, userResponseDto);
         String specificUserPath = specificUserPath(userResponseDto.getId());
-        List<Resource> resources = getResourcesByPath(path, specificUserPath);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zipOut = new ZipOutputStream(baos);
@@ -197,6 +197,46 @@ public class FileStorageMinioService implements FileStorageService {
         }
         zipOut.close();
         return baos.toByteArray();
+    }
+
+    @Override
+    public List<Resource> move(String from, String to, UserResponseDto userResponseDto) {
+        validateFilePath(from);
+        validateFilePath(to);
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+
+        try {
+            InputStream is = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + from)
+                            .build()
+            );
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            is.transferTo(baos);
+            byte[] byteArray = baos.toByteArray();
+
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + to)
+                            .stream(new ByteArrayInputStream(byteArray), byteArray.length, -1)
+                            .build()
+            );
+
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + from)
+                            .build()
+            );
+
+        } catch (Exception e) {
+            throw new InternalFileStorageException();
+        }
+
+        return getResourcesByPath(to, userResponseDto);
     }
 
     @Override

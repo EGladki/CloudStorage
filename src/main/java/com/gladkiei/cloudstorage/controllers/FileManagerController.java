@@ -23,55 +23,12 @@ import java.util.List;
 @RequestMapping("/api")
 public class FileManagerController {
 
+    private final FileStorageService fileStorageService;
     @Value("${minio.root-bucket}")
     private String root;
 
-    private final FileStorageService fileStorageService;
-
     public FileManagerController(FileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
-    }
-
-    @GetMapping("/resource")
-    @Operation(summary = "get info about resource")
-    public ResponseEntity<?> getResource(@RequestParam String path) {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-        List<Resource> resources = fileStorageService.getResource(path, userResponseDto);
-
-        return ResponseEntity.status(HttpStatus.OK).body(resources);
-    }
-
-    @DeleteMapping("/resource")
-    @Operation(summary = "delete resource")
-    public ResponseEntity<?> deleteResource(@RequestParam String path) {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-        fileStorageService.delete(path, userResponseDto);
-
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-    }
-
-//    @GetMapping(value = "/resource/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-//    @Operation(summary = "download resource")
-//    public ResponseEntity<?> download(@RequestParam String path) {
-//        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-//        byte[] downloaded = fileStorageService.downloadSingleFile(path, userResponseDto);
-//
-//        return ResponseEntity.status(HttpStatus.OK)
-//                .header(HttpHeaders.CONTENT_DISPOSITION,extractName(path))
-//                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-//                .body(downloaded);
-//    }
-
-    @GetMapping(value = "/resource/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @Operation(summary = "download resource as zip")
-    public ResponseEntity<?> download(@RequestParam(defaultValue = "") String path) throws IOException {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-        byte[] downloaded = fileStorageService.downloadDirectoryAsZip(path, userResponseDto);
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .header(HttpHeaders.CONTENT_DISPOSITION,extractName(path))
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(downloaded);
     }
 
     @PostMapping("/directory")
@@ -92,6 +49,51 @@ public class FileManagerController {
         return ResponseEntity.status(HttpStatus.OK).body(content);
     }
 
+    @GetMapping("/resource")
+    @Operation(summary = "get info about resource")
+    public ResponseEntity<?> getResource(@RequestParam String path) {
+        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+        List<Resource> resources = fileStorageService.getResource(path, userResponseDto);
+
+        return ResponseEntity.status(HttpStatus.OK).body(resources);
+    }
+
+    @DeleteMapping("/resource")
+    @Operation(summary = "delete resource")
+    public ResponseEntity<?> deleteResource(@RequestParam String path) {
+        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+        fileStorageService.delete(path, userResponseDto);
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @GetMapping(value = "/resource/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @Operation(summary = "download resource (single file or zip archive)")
+    public ResponseEntity<byte[]> download(@RequestParam(defaultValue = "") String path) throws IOException {
+        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+        byte[] downloaded;
+
+        if (path.endsWith("/") || path.isEmpty()) {
+            downloaded = fileStorageService.downloadDirectoryAsZip(path, userResponseDto);
+        } else {
+            downloaded = fileStorageService.downloadFile(path, userResponseDto);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .header(HttpHeaders.CONTENT_DISPOSITION, extractName(path))
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(downloaded);
+    }
+
+    @GetMapping("/resource/move")
+    @Operation(summary = "rename / move resource")
+    public ResponseEntity<?> move(@RequestParam(defaultValue = "") String from, String to) {
+        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+        List<Resource> resource = fileStorageService.move(from, to, userResponseDto);
+
+        return ResponseEntity.status(HttpStatus.OK).body(resource);
+    }
+
     private UserResponseDto getUserDtoFromAuthentication() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl principal = (UserDetailsImpl) authentication.getPrincipal();
@@ -99,7 +101,7 @@ public class FileManagerController {
     }
 
     private String extractName(String path) {
-        if (path.endsWith("/")) {
+        if (path.endsWith("/") || path.isEmpty()) {
             return extractDirectoryName(path);
         } else {
             return extractFileName(path);
@@ -109,15 +111,18 @@ public class FileManagerController {
     private String extractFileName(String path) {
         int idx = path.lastIndexOf("/");
         String name = path.substring(idx + 1);
+
         return "attachment; filename=\"" + name + "\"";
     }
 
     private String extractDirectoryName(String path) {
+        if (path.isEmpty()) {
+            return "attachment; filename=\"" + "root" + ".zip\"";
+        }
         int idx = path.lastIndexOf("/", path.length() - 2);
         String name = path.substring(idx + 1, path.length() - 1);
 
         return "attachment; filename=\"" + name + ".zip\"";
     }
-
 
 }

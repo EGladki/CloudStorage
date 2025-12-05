@@ -11,7 +11,7 @@ public interface FileStorageService {
 
     Directory createDirectory(String path, UserResponseDto userResponseDto);
 
-    void createRootDirectory(UserResponseDto dto);
+    void createRootDirectory(UserResponseDto userResponseDto);
 
     List<Resource> getContent(String path, UserResponseDto userResponseDto);
 
@@ -24,4 +24,6 @@ public interface FileStorageService {
     byte[] downloadDirectoryAsZip(String path, UserResponseDto userResponseDto) throws IOException;
 
     void upload();
+
+    List<Resource> move(String from, String to, UserResponseDto userResponseDto);
 }
