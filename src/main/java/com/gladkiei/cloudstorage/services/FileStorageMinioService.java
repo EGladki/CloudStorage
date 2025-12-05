@@ -94,7 +94,6 @@ public class FileStorageMinioService implements FileStorageService {
         if (list.isEmpty()) {
             throw new NotFoundException("Directory not found");
         }
-
         return list;
     }
 
@@ -146,13 +145,14 @@ public class FileStorageMinioService implements FileStorageService {
         }
 
         if (list.isEmpty()) {
-            throw new NotFoundException("File not found");
+            throw new NotFoundException("Not found");
         }
         return list;
     }
 
     @Override
-    public byte[] downloadSingleFile(String path, UserResponseDto userResponseDto) {
+    public byte[] downloadFile(String path, UserResponseDto userResponseDto) {
+        validateFilePath(path);
         String specificUserPath = specificUserPath(userResponseDto.getId());
         byte[] result;
         try {
@@ -169,9 +169,10 @@ public class FileStorageMinioService implements FileStorageService {
         return result;
     }
 
-    public byte[] downloadDirectory(String path, UserResponseDto userResponseDto) throws IOException {
-        List<Resource> resources = getContent(path, userResponseDto);
+    public byte[] downloadDirectoryAsZip(String path, UserResponseDto userResponseDto) throws IOException {
+        validateDirectoryPath(path);
         String specificUserPath = specificUserPath(userResponseDto.getId());
+        List<Resource> resources = getResourcesByPath(path, specificUserPath);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ZipOutputStream zipOut = new ZipOutputStream(baos);
@@ -185,17 +186,17 @@ public class FileStorageMinioService implements FileStorageService {
                                 .object(specificUserPath + path + resourceName)
                                 .build());
 
-                ZipEntry zipEntry = new ZipEntry(resourceName);
-                zipOut.putNextEntry(zipEntry);
-                inputStream.transferTo(zipOut);
-                zipOut.closeEntry();
+                    ZipEntry zipEntry = new ZipEntry(resourceName);
+                    zipOut.putNextEntry(zipEntry);
+                    inputStream.transferTo(zipOut);
+                    zipOut.closeEntry();
 
             } catch (Exception e) {
                 throw new InternalFileStorageException();
             }
         }
         zipOut.close();
-        return zipOut;
+        return baos.toByteArray();
     }
 
     @Override

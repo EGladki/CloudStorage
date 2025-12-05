@@ -19,9 +19,9 @@ public interface FileStorageService {
 
     void delete(String path, UserResponseDto userResponseDto);
 
-    byte[] downloadSingleFile(String path, UserResponseDto userResponseDto);
+    byte[] downloadFile(String path, UserResponseDto userResponseDto);
 
-    byte[] downloadDirectory(String path, UserResponseDto userResponseDto) throws IOException;
+    byte[] downloadDirectoryAsZip(String path, UserResponseDto userResponseDto) throws IOException;
 
     void upload();
 }

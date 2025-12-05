@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -62,12 +63,10 @@ public class FileManagerController {
 //    }
 
     @GetMapping(value = "/resource/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @Operation(summary = "download resource")
-    public ResponseEntity<?> download(@RequestParam String path) {
+    @Operation(summary = "download resource as zip")
+    public ResponseEntity<?> download(@RequestParam(defaultValue = "") String path) throws IOException {
         UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-        byte[] downloaded = fileStorageService.downloadDirectory(path, userResponseDto);
-
-
+        byte[] downloaded = fileStorageService.downloadDirectoryAsZip(path, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .header(HttpHeaders.CONTENT_DISPOSITION,extractName(path))
