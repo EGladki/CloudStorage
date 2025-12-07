@@ -12,6 +12,7 @@ import io.minio.*;
 import io.minio.messages.Item;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -240,8 +241,42 @@ public class FileStorageMinioService implements FileStorageService {
     }
 
     @Override
-    public void upload() {
+    public List<Resource> upload(String path, MultipartFile file, UserResponseDto userResponseDto) throws IOException {
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+        byte[] bytes = file.getBytes();
 
+        Iterable<Result<Item>> results;
+        List<Resource> list = new ArrayList<>();
+
+        try {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + path + file.getOriginalFilename())
+                            .stream(new ByteArrayInputStream(bytes), bytes.length, -1)
+                            .contentType(file.getContentType())
+                            .build()
+            );
+
+            results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(rootBucket)
+                            .prefix(specificUserPath + path + file.getOriginalFilename())
+                            .build());
+
+            for (Result<Item> result : results) {
+                Item item = result.get();
+                if (item.isDir()) {
+                    list.add(new Directory(path, extractFileName(item.objectName(), specificUserPath, path), Type.DIRECTORY));
+                } else {
+                    list.add(new File(path, extractFileName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new InternalFileStorageException();
+        }
+        return list;
     }
 
     private void validateDirectoryPath(String path) {

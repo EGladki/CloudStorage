@@ -7,6 +7,7 @@ import com.gladkiei.cloudstorage.models.Resource;
 import com.gladkiei.cloudstorage.security.UserDetailsImpl;
 import com.gladkiei.cloudstorage.services.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
+import jdk.jfr.ContentType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,7 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.print.attribute.standard.Media;
 import java.io.IOException;
 import java.util.List;
 
@@ -67,6 +70,15 @@ public class FileManagerController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+    @GetMapping("/resource/move")
+    @Operation(summary = "rename / move resource")
+    public ResponseEntity<?> move(@RequestParam(defaultValue = "") String from, String to) {
+        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+        List<Resource> resource = fileStorageService.move(from, to, userResponseDto);
+
+        return ResponseEntity.status(HttpStatus.OK).body(resource);
+    }
+
     @GetMapping(value = "/resource/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @Operation(summary = "download resource (single file or zip archive)")
     public ResponseEntity<byte[]> download(@RequestParam(defaultValue = "") String path) throws IOException {
@@ -85,13 +97,14 @@ public class FileManagerController {
                 .body(downloaded);
     }
 
-    @GetMapping("/resource/move")
-    @Operation(summary = "rename / move resource")
-    public ResponseEntity<?> move(@RequestParam(defaultValue = "") String from, String to) {
+    @PostMapping(value = "/resource", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "upload resource")
+    public ResponseEntity<?> upload(@RequestParam(defaultValue = "") String path, @RequestParam("file") MultipartFile file) throws IOException {
         UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-        List<Resource> resource = fileStorageService.move(from, to, userResponseDto);
 
-        return ResponseEntity.status(HttpStatus.OK).body(resource);
+        List<Resource> uploaded = fileStorageService.upload(path, file, userResponseDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(uploaded);
+
     }
 
     private UserResponseDto getUserDtoFromAuthentication() {

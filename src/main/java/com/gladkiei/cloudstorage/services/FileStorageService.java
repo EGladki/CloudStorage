@@ -3,6 +3,7 @@ package com.gladkiei.cloudstorage.services;
 import com.gladkiei.cloudstorage.dto.UserResponseDto;
 import com.gladkiei.cloudstorage.models.Directory;
 import com.gladkiei.cloudstorage.models.Resource;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,7 +24,7 @@ public interface FileStorageService {
 
     byte[] downloadDirectoryAsZip(String path, UserResponseDto userResponseDto) throws IOException;
 
-    void upload();
+    List<Resource> upload(String path, MultipartFile file, UserResponseDto userResponseDto) throws IOException;
 
     List<Resource> move(String from, String to, UserResponseDto userResponseDto);
 }
