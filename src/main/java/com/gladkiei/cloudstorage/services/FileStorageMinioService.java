@@ -53,6 +53,7 @@ public class FileStorageMinioService implements FileStorageService {
     @Override
     public Directory createDirectory(String input, UserResponseDto userResponseDto) {
         validateDirectoryPath(input);
+
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
@@ -83,9 +84,9 @@ public class FileStorageMinioService implements FileStorageService {
             for (Result<Item> result : results) {
                 Item item = result.get();
                 if (item.isDir()) {
-                    list.add(new Directory(path, extractFileName(item.objectName(), specificUserPath, path), Type.DIRECTORY));
+                    list.add(new Directory(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), Type.DIRECTORY));
                 } else {
-                    list.add(new File(path, extractFileName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                    list.add(new File(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
                 }
             }
 
@@ -137,7 +138,8 @@ public class FileStorageMinioService implements FileStorageService {
             for (Result<Item> result : results) {
                 Item item = result.get();
                 if (!item.isDir() && !item.objectName().equals(specificUserPath)) {
-                    list.add(new File(path, extractFileName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                    String extractedPath = extractPathFromFileName(path);
+                    list.add(new File(extractedPath, extractFileNameFromObject(item.objectName(), specificUserPath, extractedPath), item.size(), Type.FILE));
                 }
             }
 
@@ -208,8 +210,8 @@ public class FileStorageMinioService implements FileStorageService {
         validateFilePath(to);
         getResourcesByPath(from, userResponseDto);
 
-        if (alreadyExist(to, userResponseDto)) {
-            throw new FileAlreadyExistsException(to);
+        if (fileAlreadyExist(to, userResponseDto)) {
+            throw new FileAlreadyExistsException("File '" + to + "' already exists");
         }
 
         String specificUserPath = specificUserPath(userResponseDto.getId());
@@ -251,6 +253,11 @@ public class FileStorageMinioService implements FileStorageService {
     @Override
     public List<Resource> upload(String path, MultipartFile file, UserResponseDto userResponseDto) throws IOException {
         String specificUserPath = specificUserPath(userResponseDto.getId());
+
+        if (fileAlreadyExist(path + file.getOriginalFilename(), userResponseDto)) {
+            throw new FileAlreadyExistsException("File '" + file.getOriginalFilename() + "' already exists");
+        }
+
         byte[] bytes = file.getBytes();
 
         Iterable<Result<Item>> results;
@@ -275,9 +282,9 @@ public class FileStorageMinioService implements FileStorageService {
             for (Result<Item> result : results) {
                 Item item = result.get();
                 if (item.isDir()) {
-                    list.add(new Directory(path, extractFileName(item.objectName(), specificUserPath, path), Type.DIRECTORY));
+                    list.add(new Directory(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), Type.DIRECTORY));
                 } else {
-                    list.add(new File(path, extractFileName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                    list.add(new File(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
                 }
             }
 
@@ -311,7 +318,16 @@ public class FileStorageMinioService implements FileStorageService {
         return new Directory(path, name, Type.DIRECTORY);
     }
 
-    private String extractFileName(String objectName, String specificUserPath, String path) {
+    private String extractPathFromFileName(String fileName) {
+        int idx = fileName.lastIndexOf("/");
+        if (idx == -1) {
+            return "";
+        }
+
+        return fileName.substring(0, idx + 1);
+    }
+
+    private String extractFileNameFromObject(String objectName, String specificUserPath, String path) {
         return objectName.substring(specificUserPath.length() + path.length());
     }
 
@@ -319,7 +335,7 @@ public class FileStorageMinioService implements FileStorageService {
         return "user-" + id + "-files/";
     }
 
-    private boolean alreadyExist(String path, UserResponseDto userResponseDto) {
+    private boolean fileAlreadyExist(String path, UserResponseDto userResponseDto) {
         Iterable<Result<Item>> results;
         String specificUserPath = specificUserPath(userResponseDto.getId());
         List<Resource> list = new ArrayList<>();
@@ -333,7 +349,31 @@ public class FileStorageMinioService implements FileStorageService {
             for (Result<Item> result : results) {
                 Item item = result.get();
                 if (!item.isDir() && !item.objectName().equals(specificUserPath)) {
-                    list.add(new File(path, extractFileName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                    list.add(new File(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new InternalFileStorageException();
+        }
+        return !list.isEmpty();
+    }
+
+    private boolean directoryAlreadyExist(String path, UserResponseDto userResponseDto) {
+        Iterable<Result<Item>> results;
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+        List<Resource> list = new ArrayList<>();
+        try {
+            results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(rootBucket)
+                            .prefix(specificUserPath + path)
+                            .build());
+
+            for (Result<Item> result : results) {
+                Item item = result.get();
+                if (item.isDir()) {
+                    list.add(new Directory(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), Type.DIRECTORY));
                 }
             }
 
