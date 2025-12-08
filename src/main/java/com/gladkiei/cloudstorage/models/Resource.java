@@ -16,5 +16,4 @@ public abstract class Resource {
     private String name;
 
     private Type type;
-
 }

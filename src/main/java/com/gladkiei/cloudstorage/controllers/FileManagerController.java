@@ -7,8 +7,6 @@ import com.gladkiei.cloudstorage.models.Resource;
 import com.gladkiei.cloudstorage.security.UserDetailsImpl;
 import com.gladkiei.cloudstorage.services.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
-import jdk.jfr.ContentType;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,7 +16,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.print.attribute.standard.Media;
 import java.io.IOException;
 import java.util.List;
 
@@ -27,8 +24,6 @@ import java.util.List;
 public class FileManagerController {
 
     private final FileStorageService fileStorageService;
-    @Value("${minio.root-bucket}")
-    private String root;
 
     public FileManagerController(FileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
@@ -70,22 +65,13 @@ public class FileManagerController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    @GetMapping("/resource/move")
-    @Operation(summary = "rename / move resource")
-    public ResponseEntity<?> move(@RequestParam(defaultValue = "") String from, String to) {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-        List<Resource> resource = fileStorageService.move(from, to, userResponseDto);
-
-        return ResponseEntity.status(HttpStatus.OK).body(resource);
-    }
-
-    @GetMapping(value = "/resource/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping(value = "/resource/download")
     @Operation(summary = "download resource (single file or zip archive)")
     public ResponseEntity<byte[]> download(@RequestParam(defaultValue = "") String path) throws IOException {
         UserResponseDto userResponseDto = getUserDtoFromAuthentication();
         byte[] downloaded;
 
-        if (path.endsWith("/") || path.isEmpty()) {
+        if (isDirectory(path)) {
             downloaded = fileStorageService.downloadDirectoryAsZip(path, userResponseDto);
         } else {
             downloaded = fileStorageService.downloadFile(path, userResponseDto);
@@ -97,9 +83,19 @@ public class FileManagerController {
                 .body(downloaded);
     }
 
+    @GetMapping("/resource/move")
+    @Operation(summary = "rename / move resource")
+    public ResponseEntity<?> move(@RequestParam(defaultValue = "") String from, String to) {
+        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+        List<Resource> resource = fileStorageService.moveFile(from, to, userResponseDto);
+
+        return ResponseEntity.status(HttpStatus.OK).body(resource);
+    }
+
     @PostMapping(value = "/resource", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "upload resource")
-    public ResponseEntity<?> upload(@RequestParam(defaultValue = "") String path, @RequestParam("file") MultipartFile file) throws IOException {
+    public ResponseEntity<?> upload(@RequestParam(defaultValue = "") String path,
+                                    @RequestParam("file") MultipartFile file) throws IOException {
         UserResponseDto userResponseDto = getUserDtoFromAuthentication();
 
         List<Resource> uploaded = fileStorageService.upload(path, file, userResponseDto);
@@ -114,7 +110,7 @@ public class FileManagerController {
     }
 
     private String extractName(String path) {
-        if (path.endsWith("/") || path.isEmpty()) {
+        if (isDirectory(path)) {
             return extractDirectoryName(path);
         } else {
             return extractFileName(path);
@@ -138,4 +134,7 @@ public class FileManagerController {
         return "attachment; filename=\"" + name + ".zip\"";
     }
 
+    private static boolean isDirectory(String path) {
+        return path.endsWith("/") || path.isEmpty();
+    }
 }

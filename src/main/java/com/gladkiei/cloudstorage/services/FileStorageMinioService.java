@@ -3,6 +3,7 @@ package com.gladkiei.cloudstorage.services;
 import com.gladkiei.cloudstorage.dto.UserResponseDto;
 import com.gladkiei.cloudstorage.enums.Type;
 import com.gladkiei.cloudstorage.exceptions.BadRequestException;
+import com.gladkiei.cloudstorage.exceptions.FileAlreadyExistsException;
 import com.gladkiei.cloudstorage.exceptions.InternalFileStorageException;
 import com.gladkiei.cloudstorage.exceptions.NotFoundException;
 import com.gladkiei.cloudstorage.models.Directory;
@@ -135,7 +136,7 @@ public class FileStorageMinioService implements FileStorageService {
 
             for (Result<Item> result : results) {
                 Item item = result.get();
-                if (!item.isDir()) {
+                if (!item.isDir() && !item.objectName().equals(specificUserPath)) {
                     list.add(new File(path, extractFileName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
                 }
             }
@@ -145,7 +146,7 @@ public class FileStorageMinioService implements FileStorageService {
         }
 
         if (list.isEmpty()) {
-            throw new NotFoundException("Not found");
+            throw new NotFoundException("Resource not found");
         }
         return list;
     }
@@ -153,6 +154,7 @@ public class FileStorageMinioService implements FileStorageService {
     @Override
     public byte[] downloadFile(String path, UserResponseDto userResponseDto) {
         validateFilePath(path);
+        getResourcesByPath(path, userResponseDto);
         String specificUserPath = specificUserPath(userResponseDto.getId());
 
         byte[] result;
@@ -187,10 +189,10 @@ public class FileStorageMinioService implements FileStorageService {
                                 .object(specificUserPath + path + resourceName)
                                 .build());
 
-                    ZipEntry zipEntry = new ZipEntry(resourceName);
-                    zipOut.putNextEntry(zipEntry);
-                    inputStream.transferTo(zipOut);
-                    zipOut.closeEntry();
+                ZipEntry zipEntry = new ZipEntry(resourceName);
+                zipOut.putNextEntry(zipEntry);
+                inputStream.transferTo(zipOut);
+                zipOut.closeEntry();
 
             } catch (Exception e) {
                 throw new InternalFileStorageException();
@@ -201,9 +203,15 @@ public class FileStorageMinioService implements FileStorageService {
     }
 
     @Override
-    public List<Resource> move(String from, String to, UserResponseDto userResponseDto) {
+    public List<Resource> moveFile(String from, String to, UserResponseDto userResponseDto) {
         validateFilePath(from);
         validateFilePath(to);
+        getResourcesByPath(from, userResponseDto);
+
+        if (alreadyExist(to, userResponseDto)) {
+            throw new FileAlreadyExistsException(to);
+        }
+
         String specificUserPath = specificUserPath(userResponseDto.getId());
 
         try {
@@ -291,7 +299,7 @@ public class FileStorageMinioService implements FileStorageService {
 
     private void validateFilePath(String path) {
         if (path == null || path.isBlank() || path.endsWith("/")) {
-            throw new BadRequestException("Path not valid");
+            throw new BadRequestException("Invalid path");
         }
     }
 
@@ -309,5 +317,29 @@ public class FileStorageMinioService implements FileStorageService {
 
     private String specificUserPath(Long id) {
         return "user-" + id + "-files/";
+    }
+
+    private boolean alreadyExist(String path, UserResponseDto userResponseDto) {
+        Iterable<Result<Item>> results;
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+        List<Resource> list = new ArrayList<>();
+        try {
+            results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(rootBucket)
+                            .prefix(specificUserPath + path)
+                            .build());
+
+            for (Result<Item> result : results) {
+                Item item = result.get();
+                if (!item.isDir() && !item.objectName().equals(specificUserPath)) {
+                    list.add(new File(path, extractFileName(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new InternalFileStorageException();
+        }
+        return !list.isEmpty();
     }
 }
