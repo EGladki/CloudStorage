@@ -40,18 +40,13 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
 
-                                // Разрешаем статический фронтенд
+                                "/",
                                 "/index.html",
+                                "/config.js",
                                 "/assets/**",
-                                "/*.js",
-                                "/*.css",
-                                "/*.png",
-                                "/*.svg",
-                                "/*.ico",
-                                "/*.woff",
-                                "/*.woff2",
-                                "/*.ttf",
-                                "/*.map")
+                                "/login",
+                                "/registration",
+                                "/files/**")
                         .permitAll()
                         .anyRequest().authenticated()
                 )
@@ -105,6 +100,4 @@ public class SecurityConfig {
     public SecurityContextLogoutHandler securityContextLogoutHandler() {
         return new SecurityContextLogoutHandler();
     }
-
-
 }

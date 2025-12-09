@@ -9,7 +9,6 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @ToString
 public class File extends Resource {
-
     private Long size;
 
     public File(String path, String name, Long size ,Type type) {

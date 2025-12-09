@@ -9,7 +9,6 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @ToString
 public class Directory extends Resource {
-
     public Directory(String path, String name, Type type) {
         super(path, name, type);
     }

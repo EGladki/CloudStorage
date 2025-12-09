@@ -10,10 +10,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public abstract class Resource {
-
     private String path;
-
     private String name;
-
     private Type type;
 }

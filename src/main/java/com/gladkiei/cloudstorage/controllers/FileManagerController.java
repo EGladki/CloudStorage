@@ -95,7 +95,7 @@ public class FileManagerController {
     @PostMapping(value = "/resource", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "upload resource")
     public ResponseEntity<?> upload(@RequestParam(defaultValue = "") String path,
-                                    @RequestParam("file") MultipartFile file) throws IOException {
+                                    @RequestParam("object") MultipartFile file) throws IOException {
         UserResponseDto userResponseDto = getUserDtoFromAuthentication();
 
         List<Resource> uploaded = fileStorageService.upload(path, file, userResponseDto);

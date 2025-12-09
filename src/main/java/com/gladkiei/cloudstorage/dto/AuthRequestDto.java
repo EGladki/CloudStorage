@@ -16,12 +16,12 @@ public class AuthRequestDto {
 
     @Schema(description = "Username", example = "Tom")
     @NotBlank(message = "Username is blank")
-    @Size(min = 3, max = 25, message = "Username must be 3 - 25 letters length")
+    @Size(min = 5, max = 20, message = "Username must be 5 - 20 letters length")
     @Pattern(regexp = "^[a-zA-Zа-яА-ЯёЁ\\s]+$", message = "Only letters allowed")
     private String username;
 
     @Schema(description = "Password", example = "12345")
     @NotBlank(message = "Password is blank")
-    @Size(min = 3, max = 25, message = "Password must be between 3 and 25 length")
+    @Size(min = 5, max = 20, message = "Password must be between 5 and 20 length")
     private String password;
 }
