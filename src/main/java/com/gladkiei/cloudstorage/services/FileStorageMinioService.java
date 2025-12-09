@@ -51,21 +51,29 @@ public class FileStorageMinioService implements FileStorageService {
     }
 
     @Override
-    public Directory createDirectory(String input, UserResponseDto userResponseDto) {
-        validateDirectoryPath(input);
+    public Directory createDirectory(String path, UserResponseDto userResponseDto) {
+        validateCreationDirectoryPath(path);
+
+        if (!isDirectoryExist(extractParentDirectory(path), userResponseDto)) {
+            throw new NotFoundException("Parent directory doesn't exist");
+        }
+
+        if (isDirectoryExist(path, userResponseDto)) {
+            throw new FileAlreadyExistsException("Such directory already exists");
+        }
 
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(rootBucket)
-                            .object(specificUserPath(userResponseDto.getId()) + input)
+                            .object(specificUserPath(userResponseDto.getId()) + path)
                             .stream(
                                     new ByteArrayInputStream(new byte[]{}), 0, -1)
                             .build());
         } catch (Exception e) {
             throw new InternalFileStorageException();
         }
-        return extractDirectory(input);
+        return extractDirectory(path);
     }
 
     public List<Resource> getContent(String path, UserResponseDto userResponseDto) {
@@ -294,6 +302,12 @@ public class FileStorageMinioService implements FileStorageService {
         return list;
     }
 
+    private void validateCreationDirectoryPath(String path) {
+        if (!path.endsWith("/") || path.trim().equals("/") || path.startsWith("/") || path.trim().isBlank()) {
+            throw new BadRequestException("Invalid path. Directory must ends with '/'");
+        }
+    }
+
     private void validateDirectoryPath(String path) {
         if (path.isEmpty()) {
             return;
@@ -316,6 +330,19 @@ public class FileStorageMinioService implements FileStorageService {
         String name = input.substring(idx + 1);
 
         return new Directory(path, name, Type.DIRECTORY);
+    }
+
+    public static String extractParentDirectory(String path) {
+        if (path == null || path.isEmpty()) return "";
+
+        String normalized = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+
+        int lastSlash = normalized.lastIndexOf('/');
+        if (lastSlash == -1) {
+            return "";
+        }
+
+        return normalized.substring(0, lastSlash + 1);
     }
 
     private String extractPathFromFileName(String fileName) {
@@ -359,7 +386,7 @@ public class FileStorageMinioService implements FileStorageService {
         return !list.isEmpty();
     }
 
-    private boolean directoryAlreadyExist(String path, UserResponseDto userResponseDto) {
+    private boolean isDirectoryExist(String path, UserResponseDto userResponseDto) {
         Iterable<Result<Item>> results;
         String specificUserPath = specificUserPath(userResponseDto.getId());
         List<Resource> list = new ArrayList<>();
@@ -372,7 +399,7 @@ public class FileStorageMinioService implements FileStorageService {
 
             for (Result<Item> result : results) {
                 Item item = result.get();
-                if (item.isDir()) {
+                if (item.isDir() || item.objectName().equals(specificUserPath + path)) {
                     list.add(new Directory(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), Type.DIRECTORY));
                 }
             }
