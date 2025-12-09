@@ -34,7 +34,25 @@ public class SecurityConfig {
                         sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/sign-in","/api/auth/sign-up", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/sign-in",
+                                "/api/auth/sign-up",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+
+                                // Разрешаем статический фронтенд
+                                "/index.html",
+                                "/assets/**",
+                                "/*.js",
+                                "/*.css",
+                                "/*.png",
+                                "/*.svg",
+                                "/*.ico",
+                                "/*.woff",
+                                "/*.woff2",
+                                "/*.ttf",
+                                "/*.map")
+                        .permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form.disable())
