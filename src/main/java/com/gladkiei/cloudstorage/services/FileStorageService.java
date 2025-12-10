@@ -20,11 +20,9 @@ public interface FileStorageService {
 
     void delete(String path, UserResponseDto userResponseDto);
 
-    byte[] downloadFile(String path, UserResponseDto userResponseDto);
-
-    byte[] downloadDirectoryAsZip(String path, UserResponseDto userResponseDto) throws IOException;
+    byte[] download(String path, UserResponseDto userResponseDto) throws IOException;
 
     List<Resource> upload(String path, MultipartFile file, UserResponseDto userResponseDto) throws IOException;
 
-    List<Resource> moveFile(String from, String to, UserResponseDto userResponseDto);
+    List<Resource> move(String from, String to, UserResponseDto userResponseDto);
 }

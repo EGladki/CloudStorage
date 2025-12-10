@@ -117,9 +117,39 @@ public class FileStorageMinioService implements FileStorageService {
 
     @Override
     public void delete(String path, UserResponseDto userResponseDto) {
+        if (isDirectory(path)) {
+            deleteDirectory(path, userResponseDto);
+        } else {
+            deleteFile(path, userResponseDto);
+        }
+    }
+
+    public void deleteFile(String path, UserResponseDto userResponseDto) {
         validateFilePath(path);
+
+        if(!isFileExist(path, userResponseDto)) {
+            throw new NotFoundException("File '" + path + "' not found");
+        }
+
         String specificUserPath = specificUserPath(userResponseDto.getId());
-        getResourcesByPath(path, userResponseDto);
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + path)
+                            .build());
+        } catch (Exception e) {
+            throw new InternalFileStorageException();
+        }
+    }
+
+    public void deleteDirectory(String path, UserResponseDto userResponseDto) {
+        validateCreationDirectoryPath(path);
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+
+        if (!isDirectoryExist(path, userResponseDto)) {
+            throw new NotFoundException("Directory '" + path + "' not found");
+        }
 
         try {
             minioClient.removeObject(
@@ -162,6 +192,14 @@ public class FileStorageMinioService implements FileStorageService {
     }
 
     @Override
+    public byte[] download(String path, UserResponseDto userResponseDto) throws IOException {
+        if (isDirectory(path)) {
+            return downloadDirectoryAsZip(path, userResponseDto);
+        } else {
+            return downloadFile(path, userResponseDto);
+        }
+    }
+
     public byte[] downloadFile(String path, UserResponseDto userResponseDto) {
         validateFilePath(path);
         getResourcesByPath(path, userResponseDto);
@@ -213,12 +251,12 @@ public class FileStorageMinioService implements FileStorageService {
     }
 
     @Override
-    public List<Resource> moveFile(String from, String to, UserResponseDto userResponseDto) {
+    public List<Resource> move(String from, String to, UserResponseDto userResponseDto) {
         validateFilePath(from);
         validateFilePath(to);
         getResourcesByPath(from, userResponseDto);
 
-        if (fileAlreadyExist(to, userResponseDto)) {
+        if (isFileExist(to, userResponseDto)) {
             throw new FileAlreadyExistsException("File '" + to + "' already exists");
         }
 
@@ -262,7 +300,7 @@ public class FileStorageMinioService implements FileStorageService {
     public List<Resource> upload(String path, MultipartFile file, UserResponseDto userResponseDto) throws IOException {
         String specificUserPath = specificUserPath(userResponseDto.getId());
 
-        if (fileAlreadyExist(path + file.getOriginalFilename(), userResponseDto)) {
+        if (isFileExist(path + file.getOriginalFilename(), userResponseDto)) {
             throw new FileAlreadyExistsException("File '" + file.getOriginalFilename() + "' already exists");
         }
 
@@ -303,8 +341,8 @@ public class FileStorageMinioService implements FileStorageService {
     }
 
     private void validateCreationDirectoryPath(String path) {
-        if (!path.endsWith("/") || path.trim().equals("/") || path.startsWith("/") || path.trim().isBlank()) {
-            throw new BadRequestException("Invalid path. Directory must ends with '/'");
+        if (!path.endsWith("/") || path.trim().equals("/") || path.startsWith("/") || path.trim().isBlank() || path.matches(".*[:|<>*?\"].*")) {
+            throw new BadRequestException("Invalid directory name");
         }
     }
 
@@ -313,14 +351,14 @@ public class FileStorageMinioService implements FileStorageService {
             return;
         }
 
-        if (!path.endsWith("/") || path.trim().equals("/") || path.startsWith("/")) {
-            throw new BadRequestException("Invalid path. Directory must ends with '/'");
+        if (!path.endsWith("/") || path.trim().equals("/") || path.startsWith("/") || path.matches(".*[:|<>*?\"].*")) {
+            throw new BadRequestException("Invalid directory name");
         }
     }
 
     private void validateFilePath(String path) {
-        if (path == null || path.isBlank() || path.endsWith("/")) {
-            throw new BadRequestException("Invalid path");
+        if (path == null || path.isBlank() || path.matches(".*[:|<>*?\"/].*")) {
+            throw new BadRequestException("Invalid file name");
         }
     }
 
@@ -362,7 +400,7 @@ public class FileStorageMinioService implements FileStorageService {
         return "user-" + id + "-files/";
     }
 
-    private boolean fileAlreadyExist(String path, UserResponseDto userResponseDto) {
+    private boolean isFileExist(String path, UserResponseDto userResponseDto) {
         Iterable<Result<Item>> results;
         String specificUserPath = specificUserPath(userResponseDto.getId());
         List<Resource> list = new ArrayList<>();
@@ -408,5 +446,9 @@ public class FileStorageMinioService implements FileStorageService {
             throw new InternalFileStorageException();
         }
         return !list.isEmpty();
+    }
+
+    private static boolean isDirectory(String path) {
+        return path.endsWith("/") || path.isEmpty();
     }
 }

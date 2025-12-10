@@ -69,13 +69,7 @@ public class FileManagerController {
     @Operation(summary = "download resource (single file or zip archive)")
     public ResponseEntity<byte[]> download(@RequestParam(defaultValue = "") String path) throws IOException {
         UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-        byte[] downloaded;
-
-        if (isDirectory(path)) {
-            downloaded = fileStorageService.downloadDirectoryAsZip(path, userResponseDto);
-        } else {
-            downloaded = fileStorageService.downloadFile(path, userResponseDto);
-        }
+        byte[] downloaded = fileStorageService.download(path, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .header(HttpHeaders.CONTENT_DISPOSITION, extractName(path))
@@ -87,7 +81,7 @@ public class FileManagerController {
     @Operation(summary = "rename / move resource")
     public ResponseEntity<?> move(@RequestParam(defaultValue = "") String from, String to) {
         UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-        List<Resource> resource = fileStorageService.moveFile(from, to, userResponseDto);
+        List<Resource> resource = fileStorageService.move(from, to, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.OK).body(resource);
     }
