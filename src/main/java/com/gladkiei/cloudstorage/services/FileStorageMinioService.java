@@ -111,8 +111,40 @@ public class FileStorageMinioService implements FileStorageService {
     @Override
     public List<Resource> getResource(String path, UserResponseDto userResponseDto) {
         validateFilePath(path);
+        return getFiles(path, userResponseDto);
+    }
 
-        return getResourcesByPath(path, userResponseDto);
+    @Override
+    public List<Resource> search(String path, UserResponseDto userResponseDto) {
+        Iterable<Result<Item>> results;
+        List<Resource> list = new ArrayList<>();
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+
+        try {
+            results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(rootBucket)
+                            .prefix(specificUserPath + path)
+                            .recursive(true)
+                            .build());
+
+            for (Result<Item> result : results) {
+                Item item = result.get();
+                if (item.isDir()) {
+                    list.add(new Directory(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), Type.DIRECTORY));
+                } else {
+                    list.add(new File(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new InternalFileStorageException();
+        }
+
+        if (list.isEmpty()) {
+            throw new NotFoundException("Resource not found");
+        }
+        return list;
     }
 
     @Override
@@ -127,7 +159,7 @@ public class FileStorageMinioService implements FileStorageService {
     public void deleteFile(String path, UserResponseDto userResponseDto) {
         validateFilePath(path);
 
-        if(!isFileExist(path, userResponseDto)) {
+        if (!isFileExist(path, userResponseDto)) {
             throw new NotFoundException("File '" + path + "' not found");
         }
 
@@ -162,7 +194,7 @@ public class FileStorageMinioService implements FileStorageService {
         }
     }
 
-    private List<Resource> getResourcesByPath(String path, UserResponseDto userResponseDto) {
+    public List<Resource> getFiles(String path, UserResponseDto userResponseDto) {
         Iterable<Result<Item>> results;
         String specificUserPath = specificUserPath(userResponseDto.getId());
         List<Resource> list = new ArrayList<>();
@@ -191,6 +223,34 @@ public class FileStorageMinioService implements FileStorageService {
         return list;
     }
 
+    public List<Resource> getDirectories(String path, UserResponseDto userResponseDto) {
+        Iterable<Result<Item>> results;
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+        List<Resource> list = new ArrayList<>();
+        try {
+            results = minioClient.listObjects(
+                    ListObjectsArgs.builder()
+                            .bucket(rootBucket)
+                            .prefix(specificUserPath + path)
+                            .build());
+
+            for (Result<Item> result : results) {
+                Item item = result.get();
+                if (item.isDir() || (item.objectName().equals(specificUserPath + path) && item.size() == 0)) {
+                    list.add(new Directory(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), Type.DIRECTORY));
+                }
+            }
+
+        } catch (Exception e) {
+            throw new InternalFileStorageException();
+        }
+
+        if (list.isEmpty()) {
+            throw new NotFoundException("Directory not found");
+        }
+        return list;
+    }
+
     @Override
     public byte[] download(String path, UserResponseDto userResponseDto) throws IOException {
         if (isDirectory(path)) {
@@ -202,7 +262,11 @@ public class FileStorageMinioService implements FileStorageService {
 
     public byte[] downloadFile(String path, UserResponseDto userResponseDto) {
         validateFilePath(path);
-        getResourcesByPath(path, userResponseDto);
+
+        if (!isFileExist(path, userResponseDto)) {
+            throw new NotFoundException("File '" + path + "' not found");
+        }
+
         String specificUserPath = specificUserPath(userResponseDto.getId());
 
         byte[] result;
@@ -222,7 +286,7 @@ public class FileStorageMinioService implements FileStorageService {
 
     public byte[] downloadDirectoryAsZip(String path, UserResponseDto userResponseDto) throws IOException {
         validateDirectoryPath(path);
-        List<Resource> resources = getResourcesByPath(path, userResponseDto);
+        List<Resource> resources = getFiles(path, userResponseDto);
         String specificUserPath = specificUserPath(userResponseDto.getId());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -252,9 +316,20 @@ public class FileStorageMinioService implements FileStorageService {
 
     @Override
     public List<Resource> move(String from, String to, UserResponseDto userResponseDto) {
+        if (isDirectory(from)) {
+            return moveDirectory(from, to, userResponseDto);
+        } else {
+            return moveFile(from, to, userResponseDto);
+        }
+    }
+
+    private List<Resource> moveFile(String from, String to, UserResponseDto userResponseDto) {
         validateFilePath(from);
         validateFilePath(to);
-        getResourcesByPath(from, userResponseDto);
+
+        if (!isFileExist(from, userResponseDto)) {
+            throw new NotFoundException("File '" + from + "' not found");
+        }
 
         if (isFileExist(to, userResponseDto)) {
             throw new FileAlreadyExistsException("File '" + to + "' already exists");
@@ -292,8 +367,54 @@ public class FileStorageMinioService implements FileStorageService {
         } catch (Exception e) {
             throw new InternalFileStorageException();
         }
+        return getFiles(to, userResponseDto);
+    }
 
-        return getResourcesByPath(to, userResponseDto);
+    private List<Resource> moveDirectory(String from, String to, UserResponseDto userResponseDto) {
+        validateDirectoryPath(from);
+        validateDirectoryPath(to);
+
+        if (!isDirectoryExist(from, userResponseDto)) {
+            throw new NotFoundException("Directory '" + from + "' not found");
+        }
+
+        if (isDirectoryExist(to, userResponseDto)) {
+            throw new FileAlreadyExistsException("Directory '" + to + "' already exists");
+        }
+
+        String specificUserPath = specificUserPath(userResponseDto.getId());
+
+        try {
+            InputStream is = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + from)
+                            .build()
+            );
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            is.transferTo(baos);
+            byte[] byteArray = baos.toByteArray();
+
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + to)
+                            .stream(new ByteArrayInputStream(byteArray), byteArray.length, -1)
+                            .build()
+            );
+
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(rootBucket)
+                            .object(specificUserPath + from) //удалить вложенные файлы? todo
+                            .build()
+            );
+
+        } catch (Exception e) {
+            throw new InternalFileStorageException();
+        }
+        return getDirectories(to, userResponseDto);
     }
 
     @Override
@@ -340,6 +461,8 @@ public class FileStorageMinioService implements FileStorageService {
         return list;
     }
 
+
+
     private void validateCreationDirectoryPath(String path) {
         if (!path.endsWith("/") || path.trim().equals("/") || path.startsWith("/") || path.trim().isBlank() || path.matches(".*[:|<>*?\"].*")) {
             throw new BadRequestException("Invalid directory name");
@@ -370,19 +493,6 @@ public class FileStorageMinioService implements FileStorageService {
         return new Directory(path, name, Type.DIRECTORY);
     }
 
-    public static String extractParentDirectory(String path) {
-        if (path == null || path.isEmpty()) return "";
-
-        String normalized = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
-
-        int lastSlash = normalized.lastIndexOf('/');
-        if (lastSlash == -1) {
-            return "";
-        }
-
-        return normalized.substring(0, lastSlash + 1);
-    }
-
     private String extractPathFromFileName(String fileName) {
         int idx = fileName.lastIndexOf("/");
         if (idx == -1) {
@@ -394,6 +504,19 @@ public class FileStorageMinioService implements FileStorageService {
 
     private String extractFileNameFromObject(String objectName, String specificUserPath, String path) {
         return objectName.substring(specificUserPath.length() + path.length());
+    }
+
+    public static String extractParentDirectory(String path) {
+        if (path == null || path.isEmpty()) return "";
+
+        String normalized = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+
+        int lastSlash = normalized.lastIndexOf('/');
+        if (lastSlash == -1) {
+            return "";
+        }
+
+        return normalized.substring(0, lastSlash + 1);
     }
 
     private String specificUserPath(Long id) {
@@ -446,6 +569,10 @@ public class FileStorageMinioService implements FileStorageService {
             throw new InternalFileStorageException();
         }
         return !list.isEmpty();
+    }
+
+    private boolean isSystemFile(Item item, String specificUserPath, String path) {
+        return !item.isDir() && extractFileNameFromObject(item.objectName(), specificUserPath, path).isBlank() && item.size() == 0;
     }
 
     private static boolean isDirectory(String path) {

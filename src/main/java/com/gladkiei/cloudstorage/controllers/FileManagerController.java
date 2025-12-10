@@ -51,9 +51,9 @@ public class FileManagerController {
     @Operation(summary = "get info about resource")
     public ResponseEntity<?> getResource(@RequestParam String path) {
         UserResponseDto userResponseDto = getUserDtoFromAuthentication();
-        List<Resource> resources = fileStorageService.getResource(path, userResponseDto);
+        List<Resource> resource = fileStorageService.getResource(path, userResponseDto);
 
-        return ResponseEntity.status(HttpStatus.OK).body(resources);
+        return ResponseEntity.status(HttpStatus.OK).body(resource);
     }
 
     @DeleteMapping("/resource")
@@ -95,6 +95,15 @@ public class FileManagerController {
         List<Resource> uploaded = fileStorageService.upload(path, file, userResponseDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(uploaded);
 
+    }
+
+    @GetMapping(value = "/resource/search")
+    @Operation(summary = "search")
+    public ResponseEntity<?> search(@RequestParam String query) {
+        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+        List<Resource> resource = fileStorageService.search(query, userResponseDto);
+
+        return ResponseEntity.status(HttpStatus.OK).body(resource);
     }
 
     private UserResponseDto getUserDtoFromAuthentication() {

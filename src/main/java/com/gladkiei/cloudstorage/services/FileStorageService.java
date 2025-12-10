@@ -18,6 +18,8 @@ public interface FileStorageService {
 
     List<Resource> getResource(String path, UserResponseDto userResponseDto);
 
+    List<Resource> search(String path, UserResponseDto userResponseDto);
+
     void delete(String path, UserResponseDto userResponseDto);
 
     byte[] download(String path, UserResponseDto userResponseDto) throws IOException;
