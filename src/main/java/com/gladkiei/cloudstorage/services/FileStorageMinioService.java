@@ -124,16 +124,17 @@ public class FileStorageMinioService implements FileStorageService {
             results = minioClient.listObjects(
                     ListObjectsArgs.builder()
                             .bucket(rootBucket)
-                            .prefix(specificUserPath + path)
+                            .startAfter(specificUserPath + path)
+//                            .prefix(specificUserPath + path) todo
                             .recursive(true)
                             .build());
 
             for (Result<Item> result : results) {
                 Item item = result.get();
                 if (item.isDir()) {
-                    list.add(new Directory(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), Type.DIRECTORY));
+                    list.add(new Directory(path, extractFileNameFromObject(item.objectName(), specificUserPath, ""), Type.DIRECTORY));
                 } else {
-                    list.add(new File(path, extractFileNameFromObject(item.objectName(), specificUserPath, path), item.size(), Type.FILE));
+                    list.add(new File(path, extractFileNameFromObject(item.objectName(), specificUserPath, ""), item.size(), Type.FILE));
                 }
             }
 
