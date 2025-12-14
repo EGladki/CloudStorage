@@ -63,13 +63,27 @@ public class AuthService {
         return DtoMapper.INSTANCE.requestDtoToResponseDto(requestDto);
     }
 
-    public UserResponseDto register(AuthRequestDto requestDto) {
+    public UserResponseDto register(AuthRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
         if (userRepository.existsByUsername(requestDto.getUsername())) {
             throw new UserAlreadyTakenException(requestDto.getUsername());
         }
+
         User user = UserMapper.INSTANCE.registerRequesDtoToUser(requestDto);
         user.setPassword(encoder.encode(requestDto.getPassword()));
-        return UserMapper.INSTANCE.userToUserResponseDto(userRepository.save(user));
+        UserResponseDto userResponseDto = UserMapper.INSTANCE.userToUserResponseDto(userRepository.save(user));
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        requestDto.getUsername(),
+                        requestDto.getPassword()
+                ));
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        securityContextRepository.saveContext(securityContext, request, response);
+        SecurityContextHolder.setContext(securityContext);
+
+        return userResponseDto;
     }
 
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {

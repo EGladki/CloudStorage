@@ -88,7 +88,7 @@ public class AuthServiceUnitTest {
         when(userRepository.existsByUsername(validRequestDto.getUsername())).thenReturn(false);
         when(encoder.encode(validRequestDto.getPassword())).thenReturn("Encoded password");
 
-        assertThatNoException().isThrownBy(() -> authService.register(validRequestDto));
+        assertThatNoException().isThrownBy(() -> authService.register(validRequestDto, request, response));
         verify(userRepository, times(1)).save(captor.capture());
         verify(encoder, times(1)).encode(validRequestDto.getPassword());
 
@@ -103,7 +103,7 @@ public class AuthServiceUnitTest {
 
         when(userRepository.existsByUsername(invalidRequestDto.getUsername())).thenReturn(true);
 
-        assertThatThrownBy(() -> authService.register(invalidRequestDto))
+        assertThatThrownBy(() -> authService.register(invalidRequestDto, request, response))
                 .isInstanceOf(UserAlreadyTakenException.class);
 
         verify(userRepository, times(0)).save(any());

@@ -89,12 +89,11 @@ public class FileManagerController {
     @PostMapping(value = "/resource", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "upload resource")
     public ResponseEntity<?> upload(@RequestParam(defaultValue = "") String path,
-                                    @RequestParam("object") MultipartFile file) throws IOException {
+                                    @RequestParam("object") MultipartFile[] files) throws IOException {
         UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+        List<Resource> uploaded = fileStorageService.upload(path, files, userResponseDto);
 
-        List<Resource> uploaded = fileStorageService.upload(path, file, userResponseDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(uploaded);
-
     }
 
     @GetMapping(value = "/resource/search")
@@ -109,6 +108,7 @@ public class FileManagerController {
     private UserResponseDto getUserDtoFromAuthentication() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl principal = (UserDetailsImpl) authentication.getPrincipal();
+
         return UserMapper.INSTANCE.principalToUserResponseDto(principal);
     }
 

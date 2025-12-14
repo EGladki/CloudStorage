@@ -46,8 +46,8 @@ public class AuthController {
             @ApiResponse(responseCode = "409", description = "Username already taken")
     })
     @PostMapping("/sign-up")
-    public ResponseEntity<?> processRegistration(@Valid @RequestBody AuthRequestDto requestDto) {
-        UserResponseDto userResponseDto = authService.register(requestDto);
+    public ResponseEntity<?> processRegistration(@Valid @RequestBody AuthRequestDto requestDto, HttpServletRequest request, HttpServletResponse response) {
+        UserResponseDto userResponseDto = authService.register(requestDto, request, response);
         fileStorageService.createRootDirectory(userResponseDto);
 
         AuthResponseDto responseDto = DtoMapper.INSTANCE.requestDtoToResponseDto(requestDto);

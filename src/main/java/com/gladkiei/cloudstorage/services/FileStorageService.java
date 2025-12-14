@@ -24,7 +24,7 @@ public interface FileStorageService {
 
     byte[] download(String path, UserResponseDto userResponseDto) throws IOException;
 
-    List<Resource> upload(String path, MultipartFile file, UserResponseDto userResponseDto) throws IOException;
+    List<Resource> upload(String path, MultipartFile[] files, UserResponseDto userResponseDto) throws IOException;
 
     List<Resource> move(String from, String to, UserResponseDto userResponseDto);
 }
