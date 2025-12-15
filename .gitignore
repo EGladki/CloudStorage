@@ -1,6 +1,7 @@
 HELP.md
 .gradle
 build/
+.env
 cloud-storage-frontend
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
