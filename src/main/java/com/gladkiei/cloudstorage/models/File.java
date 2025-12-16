@@ -1,7 +1,9 @@
 package com.gladkiei.cloudstorage.models;
 
 import com.gladkiei.cloudstorage.enums.Type;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 @Setter

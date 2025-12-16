@@ -20,7 +20,7 @@ public class MinioRootBucketInitializer {
 
     private final MinioClient minioClient;
     @Value("${minio.root-bucket}")
-    private String root ;
+    private String root;
 
     @Autowired
     public MinioRootBucketInitializer(MinioClient minioClient) {

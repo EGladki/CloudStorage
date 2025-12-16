@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.gladkiei'
-version = '0.0.1-SNAPSHOT'
+version = '1.0.0-SNAPSHOT'
 description = 'CloudStorage'
 
 java {
@@ -52,6 +52,3 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-tasks.named('test') {
-	useJUnitPlatform()
-}

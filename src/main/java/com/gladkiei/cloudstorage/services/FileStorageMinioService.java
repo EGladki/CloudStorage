@@ -434,7 +434,7 @@ public class FileStorageMinioService implements FileStorageService {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
                             .bucket(rootBucket)
-                            .object(specificUserPath + from) //удалить вложенные файлы? todo
+                            .object(specificUserPath + from)
                             .build()
             );
 
