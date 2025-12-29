@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,8 +32,9 @@ public class FileManagerController {
 
     @PostMapping("/directory")
     @Operation(summary = "create directory")
-    public ResponseEntity<?> createDirectory(@RequestParam String path) {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+    public ResponseEntity<?> createDirectory(@RequestParam String path,
+                                             @AuthenticationPrincipal UserDetailsImpl principal) {
+        UserResponseDto userResponseDto = UserMapper.INSTANCE.principalToUserResponseDto(principal);
         Directory directory = fileStorageService.createDirectory(path, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(directory);
@@ -40,8 +42,9 @@ public class FileManagerController {
 
     @GetMapping("/directory")
     @Operation(summary = "get info about directory content")
-    public ResponseEntity<?> getContent(@RequestParam(defaultValue = "") String path) {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+    public ResponseEntity<?> getContent(@RequestParam(defaultValue = "") String path,
+                                        @AuthenticationPrincipal UserDetailsImpl principal) {
+        UserResponseDto userResponseDto = UserMapper.INSTANCE.principalToUserResponseDto(principal);
         List<Resource> content = fileStorageService.getContent(path, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.OK).body(content);
@@ -49,8 +52,9 @@ public class FileManagerController {
 
     @GetMapping("/resource")
     @Operation(summary = "get info about resource")
-    public ResponseEntity<?> getResource(@RequestParam String path) {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+    public ResponseEntity<?> getResource(@RequestParam String path,
+                                         @AuthenticationPrincipal UserDetailsImpl principal) {
+        UserResponseDto userResponseDto = UserMapper.INSTANCE.principalToUserResponseDto(principal);
         List<Resource> resource = fileStorageService.getResource(path, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.OK).body(resource);
@@ -58,8 +62,9 @@ public class FileManagerController {
 
     @DeleteMapping("/resource")
     @Operation(summary = "delete resource")
-    public ResponseEntity<?> deleteResource(@RequestParam String path) {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+    public ResponseEntity<?> deleteResource(@RequestParam String path,
+                                            @AuthenticationPrincipal UserDetailsImpl principal) {
+        UserResponseDto userResponseDto = UserMapper.INSTANCE.principalToUserResponseDto(principal);
         fileStorageService.delete(path, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
@@ -67,8 +72,9 @@ public class FileManagerController {
 
     @GetMapping(value = "/resource/download")
     @Operation(summary = "download resource (single file or zip archive)")
-    public ResponseEntity<byte[]> download(@RequestParam(defaultValue = "") String path) throws IOException {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+    public ResponseEntity<byte[]> download(@RequestParam(defaultValue = "") String path,
+                                           @AuthenticationPrincipal UserDetailsImpl principal) throws IOException {
+        UserResponseDto userResponseDto = UserMapper.INSTANCE.principalToUserResponseDto(principal);
         byte[] downloaded = fileStorageService.download(path, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -79,8 +85,10 @@ public class FileManagerController {
 
     @GetMapping("/resource/move")
     @Operation(summary = "rename / move resource")
-    public ResponseEntity<?> move(@RequestParam(defaultValue = "") String from, String to) {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+    public ResponseEntity<?> move(@RequestParam(defaultValue = "") String from,
+                                  @RequestParam String to,
+                                  @AuthenticationPrincipal UserDetailsImpl principal) {
+        UserResponseDto userResponseDto = UserMapper.INSTANCE.principalToUserResponseDto(principal);
         List<Resource> resource = fileStorageService.move(from, to, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.OK).body(resource);
@@ -89,8 +97,9 @@ public class FileManagerController {
     @PostMapping(value = "/resource", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "upload resource")
     public ResponseEntity<?> upload(@RequestParam(defaultValue = "") String path,
-                                    @RequestParam("object") MultipartFile[] files) throws IOException {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+                                    @RequestParam("object") MultipartFile[] files,
+                                    @AuthenticationPrincipal UserDetailsImpl principal) throws IOException {
+        UserResponseDto userResponseDto = UserMapper.INSTANCE.principalToUserResponseDto(principal);
         List<Resource> uploaded = fileStorageService.upload(path, files, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(uploaded);
@@ -98,18 +107,12 @@ public class FileManagerController {
 
     @GetMapping(value = "/resource/search")
     @Operation(summary = "search")
-    public ResponseEntity<?> search(@RequestParam String query) {
-        UserResponseDto userResponseDto = getUserDtoFromAuthentication();
+    public ResponseEntity<?> search(@RequestParam String query,
+                                    @AuthenticationPrincipal UserDetailsImpl principal) {
+        UserResponseDto userResponseDto = UserMapper.INSTANCE.principalToUserResponseDto(principal);
         List<Resource> resource = fileStorageService.search(query, userResponseDto);
 
         return ResponseEntity.status(HttpStatus.OK).body(resource);
-    }
-
-    private UserResponseDto getUserDtoFromAuthentication() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl principal = (UserDetailsImpl) authentication.getPrincipal();
-
-        return UserMapper.INSTANCE.principalToUserResponseDto(principal);
     }
 
     private String extractName(String path) {

@@ -11,6 +11,7 @@ import com.gladkiei.cloudstorage.models.File;
 import com.gladkiei.cloudstorage.models.Resource;
 import io.minio.*;
 import io.minio.messages.Item;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +26,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 @Service
+@Slf4j
 public class FileStorageMinioService implements FileStorageService {
 
     private final MinioClient minioClient;
@@ -46,7 +48,8 @@ public class FileStorageMinioService implements FileStorageService {
                                     new ByteArrayInputStream(new byte[]{}), 0, -1)
                             .build());
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to create root directory:", e);
+            throw new InternalFileStorageException("Failed to create root directory");
         }
     }
 
@@ -71,7 +74,8 @@ public class FileStorageMinioService implements FileStorageService {
                                     new ByteArrayInputStream(new byte[]{}), 0, -1)
                             .build());
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to create directory:{}", path, e);
+            throw new InternalFileStorageException("Failed to create directory");
         }
         return extractDirectory(path);
     }
@@ -99,7 +103,8 @@ public class FileStorageMinioService implements FileStorageService {
             }
 
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to get content: {}", path, e);
+            throw new InternalFileStorageException("Failed to get content");
         }
 
         return list;
@@ -143,12 +148,10 @@ public class FileStorageMinioService implements FileStorageService {
             }
 
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to search:{}", path, e);
+            throw new InternalFileStorageException("Failed to search");
         }
 
-        if (list.isEmpty()) {
-            throw new NotFoundException("Resource not found");
-        }
         return list;
     }
 
@@ -176,7 +179,8 @@ public class FileStorageMinioService implements FileStorageService {
                             .object(specificUserPath + path)
                             .build());
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to delete file:{}", path, e);
+            throw new InternalFileStorageException("Failed to delete file");
         }
     }
 
@@ -200,7 +204,8 @@ public class FileStorageMinioService implements FileStorageService {
                             .object(specificUserPath + path)
                             .build());
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to delete directory:{}", path, e);
+            throw new InternalFileStorageException("Failed to delete directory");
         }
     }
 
@@ -224,7 +229,8 @@ public class FileStorageMinioService implements FileStorageService {
             }
 
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to get files:{}", path, e);
+            throw new InternalFileStorageException("Failed to get files");
         }
 
         if (list.isEmpty()) {
@@ -252,7 +258,8 @@ public class FileStorageMinioService implements FileStorageService {
             }
 
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to get moved directory:{}", path, e);
+            throw new InternalFileStorageException("Failed to get moved directory");
         }
 
         if (list.isEmpty()) {
@@ -289,7 +296,8 @@ public class FileStorageMinioService implements FileStorageService {
 
             result = stream.readAllBytes();
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to download file:{}", path, e);
+            throw new InternalFileStorageException("Failed to download file");
         }
         return result;
     }
@@ -324,7 +332,8 @@ public class FileStorageMinioService implements FileStorageService {
                 zipOut.closeEntry();
 
             } catch (Exception e) {
-                throw new InternalFileStorageException();
+                log.error("Failed to download directory as zip:{}", path, e);
+                throw new InternalFileStorageException("Failed to download directory as zip");
             }
         }
         zipOut.close();
@@ -386,7 +395,8 @@ public class FileStorageMinioService implements FileStorageService {
             );
 
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to move file:{}, {}", from, to, e);
+            throw new InternalFileStorageException("Failed to move file");
         }
         return getFiles(to, userResponseDto);
     }
@@ -439,7 +449,8 @@ public class FileStorageMinioService implements FileStorageService {
             );
 
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to move directory:{}, {}", from, to, e);
+            throw new InternalFileStorageException("Failed to move directory");
         }
         return getMovedDirectory(to, userResponseDto);
     }
@@ -496,7 +507,8 @@ public class FileStorageMinioService implements FileStorageService {
                     }
                 }
             } catch (Exception e) {
-                throw new InternalFileStorageException();
+                log.error("Failed to upload:{}", path, e);
+                throw new InternalFileStorageException("Failed to upload");
             }
         }
         return list;
@@ -659,7 +671,8 @@ public class FileStorageMinioService implements FileStorageService {
             }
 
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to check file existence:{}", path, e);
+            throw new InternalFileStorageException("Failed to check file existence");
         }
         return !list.isEmpty();
     }
@@ -683,7 +696,8 @@ public class FileStorageMinioService implements FileStorageService {
             }
 
         } catch (Exception e) {
-            throw new InternalFileStorageException();
+            log.error("Failed to check directory existence:{}", path, e);
+            throw new InternalFileStorageException("Failed to check directory existence");
         }
         return !list.isEmpty();
     }
