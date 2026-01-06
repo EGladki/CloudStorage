@@ -1,4 +1,17 @@
 services:
+  app:
+    build: .
+    container_name: cloudstorage
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+      - minio
+
   db:
     image: postgres:17
     container_name: postgres
